@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ahmed Allam Hand Magic</title>
+    
+    <!-- استيراد الخط السحري -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', sans-serif; }
+        
+        /* --- LANDING PAGE STYLES --- */
+        #landing-page {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: radial-gradient(circle at center, #111 0%, #000 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100; transition: opacity 0.8s ease-out;
+        }
+
+        .landing-title {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 4rem;
+            color: #fff;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #00e6e6, 0 0 40px #0077ff;
+            animation: pulseTitle 3s infinite alternate;
+        }
+
+        .instructions {
+            color: #aaa;
+            margin-bottom: 40px;
+            text-align: center;
+            line-height: 1.6;
+            font-size: 1.1rem;
+            max-width: 600px;
+        }
+
+        .start-btn {
+            background: transparent;
+            color: #00ffcc;
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: 1.5rem;
+            padding: 15px 50px;
+            border: 2px solid #00ffcc;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn:hover {
+            background: #00ffcc;
+            color: #000;
+            box-shadow: 0 0 40px rgba(0, 255, 204, 0.8);
+            transform: scale(1.05);
+        }
+
+        @keyframes pulseTitle {
+            from { text-shadow: 0 0 20px #00e6e6; transform: scale(1); }
+            to { text-shadow: 0 0 40px #00e6e6, 0 0 60px #0077ff; transform: scale(1.02); }
+        }
+
+        /* --- MAIN UI STYLES --- */
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        #magic-title-overlay {
+            position: absolute; top: 30px; width: 100%; text-align: center; z-index: 10;
+            pointer-events: none; opacity: 0; transition: opacity 2s;
+            font-family: 'Cinzel Decorative', cursive; font-size: 2.5rem; color: #fff;
+            text-shadow: 0 0 10px #00e6e6, 0 0 30px #0077ff;
+        }
+
+        #ui {
+            position: absolute; bottom: 20px; left: 20px; z-index: 2;
+            color: #00ffcc; pointer-events: none; opacity: 0; transition: opacity 1s;
+        }
+        .status { font-size: 14px; opacity: 0.8; }
+        .gesture-icon { font-size: 24px; font-weight: bold; margin-top: 5px; }
+        
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: white; font-size: 20px; z-index: 50; display: none;
+            font-family: 'Cinzel Decorative', cursive;
+        }
+    </style>
+    
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "@mediapipe/hands": "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js",
+                "@mediapipe/drawing_utils": "https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- 1. LANDING PAGE / START SCREEN -->
+    <div id="landing-page">
+        <div class="landing-title">Ahmed Allam<br>Hand Magic</div>
+        <div class="instructions">
+            Allow camera access to control particles.<br>
+            ✋ Open Hand: Repel | ✊ Fist: Gravity | 👌 Pinch: Swirl
+        </div>
+        <button class="start-btn" onclick="startExperience()">Enter The Void</button>
+    </div>
+
+    <!-- 2. IN-APP UI -->
+    <div id="magic-title-overlay">Ahmed Allam Hand Magic</div>
+    <div id="loading">Summoning Particles...</div>
+    
+    <div id="ui">
+        <div class="status">PARTICLES: <span id="p-count">65536</span></div>
+        <div class="status">FPS: <span id="fps">0</span></div>
+        <div class="gesture-icon" id="gesture-display">WAITING FOR HAND...</div>
+    </div>
+    
+    <div id="canvas-container"></div>
+
+    <!-- MAIN SCRIPT -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { GPUComputationRenderer } from 'three/addons/misc/GPUComputationRenderer.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        
+        // --- GLOBAL VARIABLES ---
+        const WIDTH = 256; 
+        const PARTICLES = WIDTH * WIDTH;
+        const CAM_Z = 100;
+        
+        let scene, camera, renderer, composer;
+        let gpuCompute, velocityVariable, positionVariable;
+        let positionUniforms, velocityUniforms, particleUniforms;
+        let particleMesh;
+        let lastTime = performance.now();
+        let frameCount = 0;
+        let isRunning = false;
+
+        const handState = {
+            active: false,
+            position: new THREE.Vector3(0, 0, 0),
+            gesture: 'NONE',
+            force: 0.0 
+        };
+
+        // --- SHADERS ---
+        const fragmentSimulationShader = `
+            uniform float time;
+            uniform float delta;
+            uniform vec3 uInputPos;
+            uniform float uInputForce;
+            uniform float uInputActive;
+            
+            vec3 snoiseVec3( vec3 x ){
+                float s  = sin(x.x); float c  = cos(x.x);
+                float s1 = sin(x.y); float c1 = cos(x.y);
+                float s2 = sin(x.z); float c2 = cos(x.z);
+                return vec3(c*s1+c1*s2, s*c1+c2*s, c*s2+s1*c);
+            }
+            
+            vec3 curlNoise( vec3 p ){
+                const float e = 0.1;
+                vec3 dx = vec3(e,0,0); vec3 dy = vec3(0,e,0); vec3 dz = vec3(0,0,e);
+                vec3 p_x0 = snoiseVec3(p-dx); vec3 p_x1 = snoiseVec3(p+dx);
+                vec3 p_y0 = snoiseVec3(p-dy); vec3 p_y1 = snoiseVec3(p+dy);
+                vec3 p_z0 = snoiseVec3(p-dz); vec3 p_z1 = snoiseVec3(p+dz);
+                float x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;
+                float y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;
+                float z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;
+                const float divisor = 1.0 / ( 2.0 * e );
+                return normalize( vec3( x , y , z ) * divisor );
+            }
+
+            void main() {
+                vec2 uv = gl_FragCoord.xy / resolution.xy;
+                vec3 pos = texture2D( texturePosition, uv ).xyz;
+                vec3 vel = texture2D( textureVelocity, uv ).xyz;
+
+                // Base Noise
+                vec3 noise = curlNoise(pos * 0.02 + time * 0.1); 
+                vel += noise * 0.5 * delta;
+
+                // Interaction
+                if(uInputActive > 0.5) {
+                    vec3 diff = uInputPos - pos;
+                    float dist = length(diff);
+                    vec3 dir = normalize(diff);
+
+                    if(dist < 50.0) {
+                        float falloff = 1.0 - (dist / 50.0);
+                        if (uInputForce > 0.5) {
+                            vel += dir * 80.0 * falloff * delta; // Attract
+                        } else if (uInputForce < -0.5) {
+                            vel -= dir * 100.0 * falloff * delta; // Repel
+                        } else {
+                            vel += cross(dir, vec3(0,1,0)) * 20.0 * falloff * delta; // Swirl
+                        }
+                    }
+                }
+
+                vel *= 0.96; // Friction
+                if(length(pos) > 80.0) vel -= normalize(pos) * 2.0 * delta; // Bounds
+                pos += vel * delta;
+
+                gl_FragColor = vec4( pos, 1.0 );
+            }
+        `;
+
+        const vertexShader = `
+            uniform sampler2D texturePosition;
+            uniform sampler2D textureVelocity;
+            attribute vec2 reference;
+            varying vec3 vColor;
+            varying float vAlpha;
+
+            void main() {
+                vec3 pos = texture2D( texturePosition, reference ).xyz;
+                vec3 vel = texture2D( textureVelocity, reference ).xyz;
+                float speed = length(vel);
+                
+                vec3 colorSlow = vec3(0.0, 0.5, 1.0); 
+                vec3 colorFast = vec3(1.0, 0.0, 0.8); 
+                
+                vColor = mix(colorSlow, colorFast, smoothstep(0.0, 4.0, speed));
+                float size = 2.0 + speed * 1.5;
+
+                vec4 mvPosition = modelViewMatrix * vec4( pos, 1.0 );
+                gl_Position = projectionMatrix * mvPosition;
+                gl_PointSize = size * ( 300.0 / -mvPosition.z );
+                vAlpha = min(1.0, speed * 0.5 + 0.3);
+            }
+        `;
+
+        const fragmentShader = `
+            varying vec3 vColor;
+            varying float vAlpha;
+            void main() {
+                vec2 coord = gl_PointCoord - vec2(0.5);
+                float dist = length(coord);
+                if (dist > 0.5) discard;
+                float strength = 1.0 - (dist * 2.0);
+                strength = pow(strength, 2.0);
+                gl_FragColor = vec4( vColor, vAlpha * strength );
+            }
+        `;
+
+        // --- START LOGIC ---
+        window.startExperience = function() {
+            // Hide landing, show loading
+            const landing = document.getElementById('landing-page');
+            landing.style.opacity = '0';
+            setTimeout(() => { landing.style.display = 'none'; }, 800);
+            
+            document.getElementById('loading').style.display = 'block';
+
+            // Start Systems
+            initThreeJS();
+            initMediaPipe();
+            
+            isRunning = true;
+            animate();
+            
+            // Show UI after slight delay
+            setTimeout(() => {
+                document.getElementById('ui').style.opacity = '1';
+                document.getElementById('magic-title-overlay').style.opacity = '1';
+            }, 1000);
+        };
+
+        function initThreeJS() {
+            const container = document.getElementById( 'canvas-container' );
+            camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 3000 );
+            camera.position.z = CAM_Z;
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2( 0x000000, 0.001 );
+
+            renderer = new THREE.WebGLRenderer( { antialias: false } );
+            renderer.setPixelRatio( window.devicePixelRatio );
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            container.appendChild( renderer.domElement );
+
+            initGPGPU();
+
+            const geometry = new THREE.BufferGeometry();
+            const references = new Float32Array( PARTICLES * 2 );
+
+            for ( let i = 0; i < PARTICLES; i++ ) {
+                const i3 = i * 2;
+                references[ i3 + 0 ] = ( i % WIDTH ) / WIDTH;
+                references[ i3 + 1 ] = Math.floor( i / WIDTH ) / WIDTH;
+            }
+            geometry.setAttribute( 'reference', new THREE.BufferAttribute( references, 2 ) );
+
+            const material = new THREE.ShaderMaterial( {
+                uniforms: particleUniforms,
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                transparent: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            particleMesh = new THREE.Points( geometry, material );
+            particleMesh.frustumCulled = false;
+            scene.add( particleMesh );
+
+            const renderScene = new RenderPass( scene, camera );
+            const bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
+            bloomPass.threshold = 0;
+            bloomPass.strength = 1.5;
+            bloomPass.radius = 0.5;
+
+            composer = new EffectComposer( renderer );
+            composer.addPass( renderScene );
+            composer.addPass( bloomPass );
+
+            window.addEventListener( 'resize', onWindowResize );
+        }
+
+        function initGPGPU() {
+            gpuCompute = new GPUComputationRenderer( WIDTH, WIDTH, renderer );
+            const dtPosition = gpuCompute.createTexture();
+            const dtVelocity = gpuCompute.createTexture();
+            fillTextures( dtPosition, dtVelocity );
+
+            velocityVariable = gpuCompute.addVariable( "textureVelocity", fragmentSimulationShader, dtVelocity );
+            positionVariable = gpuCompute.addVariable( "texturePosition", `void main(){ gl_FragColor = texture2D(texturePosition, gl_FragCoord.xy/resolution.xy); }`, dtPosition );
+
+            gpuCompute.setVariableDependencies( velocityVariable, [ positionVariable, velocityVariable ] );
+            gpuCompute.setVariableDependencies( positionVariable, [ positionVariable, velocityVariable ] );
+
+            // Simple integration shader for position
+            const positionShader = `
+                uniform float delta;
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / resolution.xy;
+                    vec3 pos = texture2D( texturePosition, uv ).xyz;
+                    vec3 vel = texture2D( textureVelocity, uv ).xyz;
+                    pos += vel * delta; 
+                    gl_FragColor = vec4( pos, 1.0 );
+                }
+            `;
+            positionVariable.material.fragmentShader = positionShader;
+
+            positionUniforms = positionVariable.material.uniforms;
+            velocityUniforms = velocityVariable.material.uniforms;
+
+            velocityUniforms[ "time" ] = { value: 0.0 };
+            velocityUniforms[ "delta" ] = { value: 0.0 };
+            velocityUniforms[ "uInputPos" ] = { value: new THREE.Vector3(0,0,0) };
+            velocityUniforms[ "uInputForce" ] = { value: 0.0 };
+            velocityUniforms[ "uInputActive" ] = { value: 0.0 };
+            positionUniforms[ "delta" ] = { value: 0.0 };
+
+            const error = gpuCompute.init();
+            if ( error !== null ) console.error( error );
+        }
+
+        function fillTextures( texturePosition, textureVelocity ) {
+            const posArray = texturePosition.image.data;
+            const velArray = textureVelocity.image.data;
+            for ( let k = 0, kl = posArray.length; k < kl; k += 4 ) {
+                const r = 30 + Math.random() * 20;
+                const phi = Math.random() * Math.PI * 2;
+                const theta = Math.random() * Math.PI;
+                posArray[ k + 0 ] = r * Math.sin(theta) * Math.cos(phi);
+                posArray[ k + 1 ] = r * Math.sin(theta) * Math.sin(phi);
+                posArray[ k + 2 ] = r * Math.cos(theta);
+                posArray[ k + 3 ] = 1;
+                velArray[ k + 0 ] = 0; velArray[ k + 1 ] = 0; velArray[ k + 2 ] = 0; velArray[ k + 3 ] = 1;
+            }
+        }
+
+        async function initMediaPipe() {
+            try {
+                const { Hands } = await import('@mediapipe/hands');
+                const { Camera } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+                
+                const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+                hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
+                hands.onResults(onHandsResults);
+
+                const videoElement = document.createElement('video');
+                const cam = new Camera(videoElement, {
+                    onFrame: async () => { await hands.send({image: videoElement}); },
+                    width: 640, height: 480
+                });
+                await cam.start();
+                
+                // Hide loading only when camera actually starts
+                document.getElementById('loading').style.display = 'none';
+            } catch (e) {
+                console.error("MediaPipe failed:", e);
+                document.getElementById('loading').innerText = "Error: Camera access denied or module failed.";
+            }
+        }
+
+        function onHandsResults(results) {
+            const gestureDisplay = document.getElementById('gesture-display');
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                const x = (landmarks[9].x - 0.5) * -160; 
+                const y = (landmarks[9].y - 0.5) * -100; 
+                const z = landmarks[9].z * -50; 
+                handState.position.lerp(new THREE.Vector3(x, y, z), 0.3);
+                handState.active = true;
+
+                const thumbTip = landmarks[4];
+                const indexTip = landmarks[8];
+                const wrist = landmarks[0];
+                const dist = (p1, p2) => Math.hypot(p1.x - p2.x, p1.y - p2.y);
+                const fingersFolded = dist(indexTip, wrist) < 0.4;
+                const isPinch = dist(thumbTip, indexTip) < 0.05;
+
+                if (fingersFolded) {
+                    handState.gesture = "FIST (GRAVITY)";
+                    handState.force = 1.0; 
+                    gestureDisplay.style.color = '#ff0055';
+                } else if (isPinch) {
+                    handState.gesture = "PINCH (SWIRL)";
+                    handState.force = 0.0;
+                    gestureDisplay.style.color = '#ffff00';
+                } else {
+                    handState.gesture = "PALM (REPEL)";
+                    handState.force = -1.0; 
+                    gestureDisplay.style.color = '#00ffcc';
+                }
+                gestureDisplay.innerText = handState.gesture;
+            } else {
+                handState.active = false;
+                gestureDisplay.innerText = "NO HAND DETECTED";
+                gestureDisplay.style.color = '#555';
+            }
+        }
+
+        function onWindowResize() {
+            if(!camera) return;
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+            composer.setSize( window.innerWidth, window.innerHeight );
+        }
+
+        function animate() {
+            if(!isRunning) return;
+            requestAnimationFrame( animate );
+            
+            const now = performance.now();
+            let delta = ( now - lastTime ) / 1000;
+            if ( delta > 1 ) delta = 1;
+            lastTime = now;
+            frameCount++;
+            if(frameCount % 30 === 0) document.getElementById('fps').innerText = Math.round(1/delta);
+
+            velocityUniforms[ "time" ].value = now * 0.001;
+            velocityUniforms[ "delta" ].value = delta;
+            velocityUniforms[ "uInputPos" ].value.copy(handState.position);
+            velocityUniforms[ "uInputActive" ].value = handState.active ? 1.0 : 0.0;
+            
+            // Smooth input force
+            const currentForce = velocityUniforms[ "uInputForce" ].value;
+            velocityUniforms[ "uInputForce" ].value += (handState.force - currentForce) * 0.1;
+            
+            positionUniforms[ "delta" ].value = delta;
+
+            gpuCompute.compute();
+            particleUniforms[ "texturePosition" ].value = gpuCompute.getCurrentRenderTarget( positionVariable ).texture;
+            particleUniforms[ "textureVelocity" ].value = gpuCompute.getCurrentRenderTarget( velocityVariable ).texture;
+            composer.render();
+        }
+    </script>
+</body>
+</html>
