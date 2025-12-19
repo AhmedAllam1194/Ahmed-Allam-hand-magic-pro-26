@@ -1,241 +1,390 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Hand Magic — Eng: Ahmed Allam</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Hand-Controlled Particle System</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        #video-input { position: absolute; top: 0; left: 0; visibility: hidden; width: 0; height: 0; }
+        
+        /* Loading Overlay */
+        #loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: white; font-size: 24px; z-index: 10; pointer-events: none;
+            text-align: center;
+        }
+        #loader span { display: block; font-size: 14px; opacity: 0.7; margin-top: 10px; }
 
-<style>
-html,body{
-  margin:0; padding:0; overflow:hidden;
-  background:radial-gradient(circle at center,#050b14,#000);
-  font-family:'Segoe UI',Arial;
-}
-
-/* Title */
-#brand{
-  position:fixed;top:15px;width:100%;
-  text-align:center;color:#fff;z-index:10;
-  pointer-events:none;
-}
-#brand h1{
-  margin:0;font-size:34px;
-  letter-spacing:3px;
-  text-shadow:0 0 25px #6cf;
-}
-#brand p{
-  margin:2px;font-size:14px;
-  opacity:.8;
-}
-
-/* UI */
-#panel{
-  position:fixed;left:20px;top:90px;
-  background:rgba(255,255,255,.08);
-  backdrop-filter:blur(12px);
-  padding:14px;border-radius:14px;
-  z-index:10;
-}
-#panel button{
-  width:170px;
-  margin:6px 0;
-  padding:10px;
-  font-size:14px;
-  border:none;
-  border-radius:10px;
-  background:linear-gradient(135deg,#6cf,#39f);
-  color:#000;
-  cursor:pointer;
-}
-#panel input{width:170px;margin-top:10px}
-
-/* Start */
-#start{
-  position:fixed;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  background:#000;z-index:20;
-}
-#start button{
-  padding:20px 34px;
-  font-size:20px;
-  border:none;border-radius:14px;
-  background:linear-gradient(135deg,#6cf,#39f);
-  box-shadow:0 0 40px #6cf;
-  cursor:pointer;
-}
-
-#status{
-  position:fixed;bottom:12px;left:50%;
-  transform:translateX(-50%);
-  color:#fff;font-size:14px;
-  opacity:.75;z-index:10;
-}
-</style>
+        /* Camera Preview (Optional, helpful for user positioning) */
+        #cam-preview {
+            position: absolute; bottom: 20px; left: 20px; width: 160px; height: 120px;
+            z-index: 5; border-radius: 10px; border: 2px solid rgba(255,255,255,0.2);
+            transform: scaleX(-1); /* Mirror effect */
+            background: #000;
+        }
+    </style>
 </head>
-
 <body>
 
-<div id="brand">
-  <h1>Hand Magic</h1>
-  <p>by Eng: Ahmed Allam</p>
-</div>
+    <div id="loader">Initializing AI & 3D Engine...<br><span>Please allow camera access</span></div>
+    <video id="video-input"></video>
+    <canvas id="cam-preview"></canvas>
+    <div id="canvas-container"></div>
 
-<div id="panel" style="display:none">
-  <button onclick="setShape('planet')">🪐 Planet</button>
-  <button onclick="setShape('fire')">🎆 Fireworks</button>
-  <button onclick="setShape('magic')">✨ Magic Orb</button>
-  <button onclick="setShape('heart')">❤️ Heart</button>
-  <button onclick="setShape('spirit')">🧘 Spirit</button>
-  <input type="color" id="color" value="#66ccff">
-</div>
+    <!-- Import Maps for Three.js and Lil-GUI -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "lil-gui": "https://unpkg.com/lil-gui@0.19.1/dist/lil-gui.esm.min.js"
+            }
+        }
+    </script>
 
-<div id="start">
-  <button onclick="start()">Enter The Magic</button>
-</div>
+    <!-- MediaPipe Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
-<div id="status">WAITING…</div>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import GUI from 'lil-gui';
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+        // --- Configuration ---
+        const config = {
+            particleCount: 15000,
+            particleSize: 0.15,
+            color: '#00ffff',
+            shape: 'Heart',
+            handInfluence: 1.0, // Multiplier for hand movement
+            autoRotate: true
+        };
 
-<script>
-let scene,camera,renderer,mesh,video;
-let positions,colors;
-const COUNT = 6000;
-const statusEl = document.getElementById("status");
+        // --- Global Variables ---
+        let scene, camera, renderer, particles, geometry, material;
+        let controls;
+        let handExpansion = 1.0; // 0 = Closed, 1 = Open
+        let targetExpansion = 1.0;
+        const clock = new THREE.Clock();
 
-async function start(){
-  document.getElementById("start").style.display="none";
-  document.getElementById("panel").style.display="block";
+        // --- Initialization ---
+        initThree();
+        initGUI();
+        initMediaPipe();
+        animate();
 
-  const stream = await navigator.mediaDevices.getUserMedia({video:true});
-  video = document.createElement("video");
-  video.srcObject = stream;
-  video.muted = true;
-  await video.play();
-  await new Promise(r=>video.readyState>=2?r():video.onloadeddata=r);
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050505, 0.02);
 
-  initThree();
-  setShape("planet");
-  initHands();
-}
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 15;
 
-function initThree(){
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(55,innerWidth/innerHeight,0.1,100);
-  camera.position.z = 5;
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
 
-  renderer = new THREE.WebGLRenderer({antialias:true,alpha:true});
-  renderer.setSize(innerWidth,innerHeight);
-  document.body.appendChild(renderer.domElement);
+            // Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = config.autoRotate;
+            controls.autoRotateSpeed = 2.0;
 
-  const geo = new THREE.BufferGeometry();
-  positions = new Float32Array(COUNT*3);
-  colors = new Float32Array(COUNT*3);
-  geo.setAttribute("position",new THREE.BufferAttribute(positions,3));
-  geo.setAttribute("color",new THREE.BufferAttribute(colors,3));
+            // Texture for particles (soft glow)
+            const sprite = generateSprite();
 
-  const mat = new THREE.PointsMaterial({
-    size:0.04,
-    vertexColors:true,
-    transparent:true,
-    opacity:0.95,
-    depthWrite:false
-  });
+            // Material
+            material = new THREE.PointsMaterial({
+                size: config.particleSize,
+                color: new THREE.Color(config.color),
+                map: sprite,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                transparent: true,
+                opacity: 0.8
+            });
 
-  mesh = new THREE.Points(geo,mat);
-  scene.add(mesh);
+            // Initial Geometry
+            generateParticles(config.shape);
 
-  animate();
-}
+            // Resize Event
+            window.addEventListener('resize', onWindowResize);
+        }
 
-function animate(){
-  requestAnimationFrame(animate);
-  mesh.rotation.y += 0.0015;
-  renderer.render(scene,camera);
-}
+        // --- Shape Generation Logic ---
+        function generateParticles(type) {
+            if (particles) scene.remove(particles);
 
-/* ===== SHAPES ===== */
-function setShape(type){
-  for(let i=0;i<COUNT;i++){
-    let x,y,z;
-    if(type==="planet"){
-      const a=Math.random()*Math.PI*2,b=Math.random()*Math.PI;
-      x=1.8*Math.sin(b)*Math.cos(a);
-      y=1.8*Math.cos(b);
-      z=1.8*Math.sin(b)*Math.sin(a);
-    }
-    if(type==="fire"){
-      const r=Math.random()*3,a=Math.random()*Math.PI*2,b=Math.random()*Math.PI;
-      x=r*Math.sin(b)*Math.cos(a);
-      y=r*Math.cos(b);
-      z=r*Math.sin(b)*Math.sin(a);
-    }
-    if(type==="magic"){
-      const t=i/COUNT*Math.PI*10;
-      x=Math.cos(t)*(1+Math.sin(t*3)*.6);
-      y=Math.sin(t*2)*1.2;
-      z=Math.sin(t)*(1+Math.cos(t*2)*.6);
-    }
-    if(type==="heart"){
-      const t=i/COUNT*Math.PI*2;
-      x=1.4*Math.pow(Math.sin(t),3);
-      y=1.1*Math.cos(t)-0.6*Math.cos(2*t);
-      z=(Math.random()-.5)*1.2;
-    }
-    if(type==="spirit"){
-      const a=Math.random()*Math.PI*2;
-      x=Math.cos(a)*Math.random()*1.8;
-      y=Math.sin(a*2)*1.6;
-      z=Math.sin(a)*Math.random()*1.8;
-    }
-    positions.set([x,y,z],i*3);
-    colors.set([0.4,0.8,1],i*3);
-  }
-  mesh.geometry.attributes.position.needsUpdate=true;
-}
+            const positions = [];
+            const cnt = config.particleCount;
 
-/* ===== HAND CONTROL ===== */
-function initHands(){
-  const hands = new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
-  hands.setOptions({maxNumHands:1,minDetectionConfidence:.7,minTrackingConfidence:.7});
-  hands.onResults(onHand);
+            for (let i = 0; i < cnt; i++) {
+                let x, y, z;
 
-  new Camera(video,{
-    onFrame:()=>hands.send({image:video}),
-    width:640,height:480
-  }).start();
-}
+                if (type === 'Heart') {
+                    // parametric heart
+                    const phi = Math.random() * Math.PI * 2;
+                    const theta = Math.random() * Math.PI;
+                    // Heart formula approximation
+                    x = 16 * Math.pow(Math.sin(phi), 3);
+                    y = 13 * Math.cos(phi) - 5 * Math.cos(2 * phi) - 2 * Math.cos(3 * phi) - Math.cos(4 * phi);
+                    z = 4 * Math.cos(theta) * Math.sin(phi); // Thickness
+                    
+                    // Normalize scaling
+                    x *= 0.3; y *= 0.3; z *= 0.3;
+                } 
+                else if (type === 'Flower') {
+                    // Rose curve in 3D
+                    const k = 4; // petals
+                    const theta = Math.random() * Math.PI * 2;
+                    const r = Math.cos(k * theta);
+                    const r2 = Math.random() * 5; // spread
+                    x = r2 * Math.cos(theta) * r;
+                    y = r2 * Math.sin(theta) * r;
+                    z = (Math.random() - 0.5) * 2;
+                }
+                else if (type === 'Saturn') {
+                    // Planet + Ring
+                    const r = Math.random();
+                    if (r > 0.4) {
+                        // Ring
+                        const ang = Math.random() * Math.PI * 2;
+                        const dist = 6 + Math.random() * 3;
+                        x = Math.cos(ang) * dist;
+                        z = Math.sin(ang) * dist;
+                        y = (Math.random() - 0.5) * 0.5;
+                    } else {
+                        // Planet body
+                        const phi = Math.acos(-1 + (2 * Math.random()));
+                        const theta = Math.sqrt(config.particleCount * Math.PI) * phi;
+                        const rad = 3.5;
+                        x = rad * Math.cos(theta) * Math.sin(phi);
+                        y = rad * Math.sin(theta) * Math.sin(phi);
+                        z = rad * Math.cos(phi);
+                    }
+                    // Tilt
+                    const rotZ = Math.cos(Math.PI / 6) * z - Math.sin(Math.PI / 6) * y;
+                    const rotY = Math.sin(Math.PI / 6) * z + Math.cos(Math.PI / 6) * y;
+                    y = rotY; z = rotZ;
+                }
+                else if (type === 'Buddha (Statue)') {
+                    // Procedural "Meditating Figure" using primitives
+                    const r = Math.random();
+                    
+                    if (r < 0.2) { // Head
+                        const u = Math.random(); const v = Math.random();
+                        const theta = 2 * Math.PI * u; const phi = Math.acos(2 * v - 1);
+                        const rad = 1.5;
+                        x = rad * Math.sin(phi) * Math.cos(theta);
+                        y = rad * Math.sin(phi) * Math.sin(theta) + 3.5;
+                        z = rad * Math.cos(phi);
+                    } else if (r < 0.6) { // Body
+                        const rad = 2.5 * Math.random();
+                        const h = (Math.random() * 4) - 2; // -2 to 2
+                        const ang = Math.random() * Math.PI * 2;
+                        x = rad * Math.cos(ang);
+                        y = h + 0.5;
+                        z = rad * Math.sin(ang);
+                        // taper top
+                        if(y > 1.5) { x *= 0.6; z *= 0.6; }
+                    } else { // Legs/Base
+                        const ang = Math.random() * Math.PI * 2;
+                        const radX = 4 + Math.random();
+                        const radZ = 3 + Math.random();
+                        x = radX * Math.cos(ang);
+                        y = -2 + (Math.random() * 1.5);
+                        z = radZ * Math.sin(ang);
+                    }
+                }
+                else if (type === 'Fireworks') {
+                    // Random sphere explosion
+                    const u = Math.random();
+                    const v = Math.random();
+                    const theta = 2 * Math.PI * u;
+                    const phi = Math.acos(2 * v - 1);
+                    const r = 8 * Math.cbrt(Math.random()); // Even volume distribution
+                    x = r * Math.sin(phi) * Math.cos(theta);
+                    y = r * Math.sin(phi) * Math.sin(theta);
+                    z = r * Math.cos(phi);
+                }
 
-function onHand(res){
-  if(!res.multiHandLandmarks || res.multiHandLandmarks.length===0){
-    statusEl.textContent="MOVE YOUR HAND";
-    return;
-  }
+                // Add some jitter/noise
+                x += (Math.random() - 0.5) * 0.1;
+                y += (Math.random() - 0.5) * 0.1;
+                z += (Math.random() - 0.5) * 0.1;
 
-  const lm = res.multiHandLandmarks[0];
-  statusEl.textContent="MAGIC ACTIVE ✨";
+                positions.push(x, y, z);
+            }
 
-  const cx=(lm[9].x-.5)*5;
-  const cy=-(lm[9].y-.5)*5;
-  mesh.position.x+=(cx-mesh.position.x)*.15;
-  mesh.position.y+=(cy-mesh.position.y)*.15;
+            geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            
+            // Store original positions for animation reference
+            geometry.userData.originalPositions = Float32Array.from(positions);
 
-  const size=Math.hypot(lm[0].x-lm[9].x,lm[0].y-lm[9].y);
-  const scale=1+size*2;
-  mesh.scale.set(scale,scale,scale);
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+        }
 
-  const pinch=Math.hypot(lm[4].x-lm[8].x,lm[4].y-lm[8].y)<.05;
-  if(pinch) mesh.rotation.y+=.08;
-}
+        // --- Helper: Procedural Texture ---
+        function generateSprite() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+            gradient.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 32, 32);
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
 
-/* ===== COLOR ===== */
-document.getElementById("color").oninput=e=>{
-  const c=new THREE.Color(e.target.value);
-  for(let i=0;i<COUNT;i++) colors.set([c.r,c.g,c.b],i*3);
-  mesh.geometry.attributes.color.needsUpdate=true;
-};
-</script>
+        // --- UI Initialization ---
+        function initGUI() {
+            const gui = new GUI({ title: 'System Controls' });
+            
+            const shapeFolder = gui.addFolder('Geometry');
+            shapeFolder.add(config, 'shape', ['Heart', 'Flower', 'Saturn', 'Buddha (Statue)', 'Fireworks']).name('Template').onChange(val => {
+                generateParticles(val);
+            });
 
+            const styleFolder = gui.addFolder('Appearance');
+            styleFolder.addColor(config, 'color').name('Particle Color').onChange(val => {
+                material.color.set(val);
+            });
+            styleFolder.add(config, 'particleSize', 0.01, 1).name('Size').onChange(val => {
+                material.size = val;
+            });
+            
+            const animFolder = gui.addFolder('Animation');
+            animFolder.add(config, 'autoRotate').name('Auto Rotate').onChange(val => {
+                controls.autoRotate = val;
+            });
+
+            // Mobile-friendly styling adjustments
+            gui.domElement.style.top = '10px';
+            gui.domElement.style.right = '10px';
+        }
+
+        // --- MediaPipe Hand Tracking ---
+        function initMediaPipe() {
+            const videoElement = document.getElementById('video-input');
+            const previewCanvas = document.getElementById('cam-preview');
+            const previewCtx = previewCanvas.getContext('2d');
+
+            const hands = new Hands({locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }});
+
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            hands.onResults((results) => {
+                // Remove loader on first successful frame
+                document.getElementById('loader').style.display = 'none';
+
+                // Draw preview
+                previewCtx.save();
+                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                previewCtx.drawImage(results.image, 0, 0, previewCanvas.width, previewCanvas.height);
+                
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    const landmarks = results.multiHandLandmarks[0];
+                    drawConnectors(previewCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
+                    
+                    // Logic: Calculate distance between Wrist (0) and Middle Finger Tip (12)
+                    // relative to the palm size to estimate "Openness"
+                    const wrist = landmarks[0];
+                    const middleTip = landmarks[12];
+                    const indexBase = landmarks[5]; // Use as reference for hand size
+
+                    // Euclidean distance (approximate in 2D for speed)
+                    const handSize = Math.hypot(indexBase.x - wrist.x, indexBase.y - wrist.y);
+                    const stretch = Math.hypot(middleTip.x - wrist.x, middleTip.y - wrist.y);
+
+                    // Normalize: When fist, stretch approx equals handSize. When open, stretch approx 2x handSize.
+                    let openness = (stretch / handSize) - 0.8; 
+                    openness = Math.max(0.1, Math.min(1.5, openness)); // Clamp
+
+                    // Map openness to target expansion
+                    // Fist (small openness) -> 0.2 expansion
+                    // Open (high openness) -> 1.5 expansion
+                    targetExpansion = openness * 1.5; 
+                } else {
+                    // No hand detected, breathe gently
+                    const time = Date.now() * 0.001;
+                    targetExpansion = 1.0 + Math.sin(time) * 0.2;
+                }
+                previewCtx.restore();
+            });
+
+            const cameraUtils = new Camera(videoElement, {
+                onFrame: async () => {
+                    await hands.send({image: videoElement});
+                },
+                width: 320,
+                height: 240
+            });
+            cameraUtils.start();
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = clock.getDelta();
+
+            // Smooth interpolation of hand influence
+            handExpansion = THREE.MathUtils.lerp(handExpansion, targetExpansion, 0.1);
+
+            // Update particles based on hand interaction
+            if (particles) {
+                const positions = particles.geometry.attributes.position.array;
+                const originals = particles.geometry.userData.originalPositions;
+                const count = config.particleCount;
+
+                // Simple scaling effect
+                particles.scale.setScalar(handExpansion);
+
+                // Optional: Dynamic wiggle based on time
+                const time = Date.now() * 0.0005;
+                for(let i=0; i < count; i++) {
+                    // Make them twinkle/move slightly
+                    positions[i*3 + 1] = originals[i*3 + 1] + Math.sin(time + positions[i*3]*0.5) * 0.1;
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+                
+                // Rotation
+                particles.rotation.y += 0.001;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
 </body>
 </html>
