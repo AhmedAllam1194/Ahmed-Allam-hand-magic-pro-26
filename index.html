@@ -4,84 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magical Universe - Ahmed Allam</title>
-    
-    <!-- خط سحري -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&display=swap" rel="stylesheet">
-
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
         
-        /* حاوية التنبيهات والأخطاء */
-        #error-overlay {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 1000; color: #ff5555;
-            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        /* شاشة تشخيص الأخطاء (تظهر فقط عند المشاكل) */
+        #debug-console {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); color: #ff5555; z-index: 9999;
+            padding: 40px; box-sizing: border-box; display: none;
+            font-family: monospace; direction: ltr; overflow: auto; text-align: left;
         }
-        #error-content { border: 1px solid #ff5555; padding: 20px; border-radius: 10px; background: #200; max-width: 80%; }
+        #debug-console h1 { color: white; border-bottom: 1px solid #555; padding-bottom: 10px; }
 
-        /* العنوان السحري */
+        /* التصميم الأساسي */
         #magic-title {
-            position: absolute; top: 30px; left: 30px; z-index: 20;
-            font-family: 'Cinzel Decorative', cursive;
-            pointer-events: none;
+            position: absolute; top: 20px; left: 20px; z-index: 10;
+            font-family: 'Cinzel Decorative', cursive; pointer-events: none;
         }
-        .main-text {
-            font-size: 36px; display: block;
-            background: linear-gradient(to right, #fff, #00ffff, #ff00ff);
+        .main-title {
+            font-size: 30px; display: block;
+            background: linear-gradient(90deg, #fff, #0ff, #f0f);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 10px rgba(0,255,255,0.5));
-            animation: pulseText 2s infinite alternate;
+            filter: drop-shadow(0 0 10px #0ff);
         }
-        .sub-text {
-            font-size: 16px; color: #aaa; letter-spacing: 4px; text-transform: uppercase;
-            display: block; margin-top: 5px; font-family: sans-serif;
-        }
-        @keyframes pulseText { from { filter: drop-shadow(0 0 5px #00ffff); } to { filter: drop-shadow(0 0 20px #ff00ff); } }
-
-        /* واجهة التحميل */
-        #loader {
+        .sub-title { font-size: 14px; color: #ccc; letter-spacing: 2px; display: block; }
+        
+        #loading {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-            color: #00ffff; font-size: 18px; z-index: 15; text-align: center;
-            background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0,255,255,0.2);
+            color: #0ff; text-align: center; font-size: 18px; z-index: 5;
         }
-
-        /* الكاميرا */
+        
         #cam-preview {
-            position: absolute; bottom: 20px; left: 20px; width: 160px; height: 120px;
-            z-index: 10; border-radius: 10px; border: 2px solid rgba(255,255,255,0.2);
-            background: #000; transform: scaleX(-1);
+            position: absolute; bottom: 20px; left: 20px; width: 150px; height: 110px;
+            border: 2px solid #333; border-radius: 10px; transform: scaleX(-1);
+            background: #000; z-index: 5;
         }
         #video-input { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- شاشة الأخطاء -->
-    <div id="error-overlay">
-        <div id="error-content">
-            <h2>⚠️ تنبيه هام</h2>
-            <p id="error-message">جاري التحقق...</p>
-            <p style="font-size: 12px; color: #ccc; margin-top:10px;">نصيحة: لا تفتح الملف بالنقر المزدوج. استخدم Live Server أو CodePen.</p>
-        </div>
+    <!-- شاشة عرض الأخطاء -->
+    <div id="debug-console">
+        <h1>System Diagnostics / تشخيص النظام</h1>
+        <p id="debug-text"></p>
+        <button onclick="location.reload()" style="padding:10px; background:#333; color:white; border:none; cursor:pointer; margin-top:20px;">Reload Page</button>
     </div>
 
-    <!-- العنوان -->
     <div id="magic-title">
-        <span class="main-text">Hand Magic</span>
-        <span class="sub-text">By : Ahmed Allam</span>
+        <span class="main-title">Hand Magic</span>
+        <span class="sub-title">By : Ahmed Allam</span>
     </div>
 
-    <div id="loader">
-        <h3>جاري استدعاء الكواكب...</h3>
-        <p>1. اسمح للكاميرا بالعمل<br>2. انتظر تحميل المكتبات</p>
-    </div>
-
+    <div id="loading">جاري تحميل النظام...<br>يرجى الانتظار</div>
     <canvas id="cam-preview"></canvas>
     <video id="video-input" playsinline></video>
     <div id="canvas-container"></div>
 
-    <!-- استيراد المكتبات (نسخ مستقرة) -->
+    <!-- استيراد المكتبات -->
     <script type="importmap">
         {
             "imports": {
@@ -92,56 +73,55 @@
         }
     </script>
 
-    <!-- MediaPipe Global Scripts -->
+    <!-- MediaPipe Global -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import GUI from 'lil-gui';
 
-        // --- التحقق من بيئة التشغيل ---
-        if (window.location.protocol === 'file:') {
-            showError("أنت تحاول تشغيل الملف مباشرة من جهازك (file://).<br>المتصفح يمنع الكاميرا في هذا الوضع.<br>يرجى استخدام إضافة <b>Live Server</b> في VS Code.");
-            throw new Error("File protocol detected");
+        // --- نظام التقاط الأخطاء ---
+        function logError(msg) {
+            const consoleDiv = document.getElementById('debug-console');
+            const textDiv = document.getElementById('debug-text');
+            consoleDiv.style.display = 'block';
+            textDiv.innerHTML += `<span style="color:red;">[ERROR]</span> ${msg}<br><br>`;
+            document.getElementById('loading').style.display = 'none';
         }
 
-        function showError(msg) {
-            const overlay = document.getElementById('error-overlay');
-            const txt = document.getElementById('error-message');
-            overlay.style.display = 'flex';
-            txt.innerHTML = msg;
-            document.getElementById('loader').style.display = 'none';
-        }
-
-        // --- الإعدادات ---
-        const config = {
-            count: 40000,
-            size: 0.07,
-            shape: 'Earth',
-            autoRotate: true
+        window.onerror = function(msg, source, lineno, colno, error) {
+            logError(`Script Error: ${msg}`);
+            return false;
         };
 
+        // التحقق من تشغيل الملف مباشرة
+        if (window.location.protocol === 'file:') {
+            logError("FATAL ERROR: You are running this file via 'file://'.<br>خطأ قاتل: لا يمكن تشغيل الكاميرا من الملف مباشرة.<br>Solution: Use VS Code Live Server or CodePen.io.");
+            throw new Error("File Protocol Block");
+        }
+
+        const config = { count: 35000, size: 0.08, shape: 'Earth' };
         let scene, camera, renderer, particles, material, controls;
         let handState = { x: 0, y: 0, expansion: 1.0, detected: false };
-        let smoothRot = { x: 0, y: 0 };
+        let smooth = { x: 0, y: 0 };
 
-        // البدء
         try {
             initThree();
             initGUI();
             initMediaPipe();
             animate();
-        } catch (err) {
-            showError("حدث خطأ أثناء التهيئة: " + err.message);
+        } catch (e) {
+            logError(e.message);
         }
 
         function initThree() {
             const container = document.getElementById('canvas-container');
-            
+            if(!container) throw new Error("Canvas container not found");
+
             scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
@@ -152,154 +132,82 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.outputColorSpace = THREE.SRGBColorSpace;
-            if(!container) throw new Error("Canvas container missing");
             container.appendChild(renderer.domElement);
 
             controls = new OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.enableZoom = false;
-            controls.autoRotate = true;
-            controls.autoRotateSpeed = 0.5;
+            controls.enableDamping = true; controls.enableZoom = false; controls.autoRotate = true;
 
             material = new THREE.PointsMaterial({
                 size: config.size,
-                map: createGlowTexture(),
-                transparent: true,
-                opacity: 0.8,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false,
-                vertexColors: true
+                map: createTexture(),
+                transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending,
+                depthWrite: false, vertexColors: true
             });
 
             generateShape(config.shape);
-            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
         }
 
-        // --- محرك الكواكب (10 أشكال) ---
         function generateShape(type) {
             if (particles) scene.remove(particles);
+            const positions = [], colors = [];
+            const color = new THREE.Color();
 
-            const positions = [];
-            const colors = [];
-            const colorObj = new THREE.Color();
-            const count = config.count;
-
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < config.count; i++) {
                 let x, y, z;
-                
-                // أساس الشكل الكروي
-                const rBase = 5;
+                // Basic Sphere logic
+                const r = 5;
                 const theta = Math.random() * Math.PI * 2;
                 const phi = Math.acos(2 * Math.random() - 1);
-                x = rBase * Math.sin(phi) * Math.cos(theta);
-                y = rBase * Math.sin(phi) * Math.sin(theta);
-                z = rBase * Math.cos(phi);
+                x = r * Math.sin(phi) * Math.cos(theta);
+                y = r * Math.sin(phi) * Math.sin(theta);
+                z = r * Math.cos(phi);
 
-                // تخصيص الكواكب
-                if (type === 'Sun') {
-                    // الشمس: نار وتوهج
-                    x *= 1.2; y *= 1.2; z *= 1.2;
-                    x += (Math.random()-0.5)*0.5;
-                    colorObj.setHSL(0.05 + Math.random()*0.1, 1.0, 0.5 + Math.random()*0.4);
+                if (type === 'Earth') {
+                    const noise = Math.sin(x*0.5) * Math.cos(y*0.5);
+                    if(Math.abs(y)>4.5) color.setHSL(0.6,0.1,0.9); // Polar
+                    else if(noise>0.2) color.setHSL(0.3,0.6,0.3); // Land
+                    else color.setHSL(0.6,0.8,0.4); // Ocean
+                } else if (type === 'Sun') {
+                    x*=1.2; y*=1.2; z*=1.2;
+                    color.setHSL(0.05 + Math.random()*0.1, 1.0, 0.6);
+                } else if (type === 'Galaxy') {
+                     const arms = 3;
+                     const spin = i % arms;
+                     const rad = Math.random() * 10;
+                     const ang = spin * (Math.PI*2/arms) + rad * 0.5;
+                     x = Math.cos(ang)*rad + (Math.random()-0.5);
+                     z = Math.sin(ang)*rad + (Math.random()-0.5);
+                     y = (Math.random()-0.5);
+                     color.setHSL(0.6 + rad/20, 0.8, 0.6);
+                } else {
+                    // Default Planets
+                    color.setHSL(Math.random(), 0.8, 0.5);
                 }
-                else if (type === 'Mercury') {
-                    // عطارد: رمادي صخري
-                    colorObj.setHSL(0.08, 0.1, 0.4 + Math.random()*0.2);
-                }
-                else if (type === 'Venus') {
-                    // الزهرة: أصفر برتقالي غائم
-                    colorObj.setHSL(0.1, 0.8, 0.6);
-                }
-                else if (type === 'Earth') {
-                    // الأرض: معقدة (محيطات، يابسة، سحب، أقطاب)
-                    // محاكاة الضجيج (Noise) للخرائط
-                    const noise = Math.sin(x*0.4) + Math.cos(y*0.4) + Math.sin(z*0.4);
-                    
-                    if (Math.abs(y) > 4.5) colorObj.setHSL(0.6, 0.1, 0.95); // أقطاب
-                    else if (noise > 1.0) colorObj.setHSL(0.3, 0.6, 0.25); // يابسة خضراء
-                    else colorObj.setHSL(0.6, 0.8, 0.4); // محيط أزرق
-                    
-                    // طبقة سحاب
-                    if(Math.random() > 0.85) {
-                        x *= 1.02; y *= 1.02; z *= 1.02;
-                        colorObj.set(0xffffff);
-                    }
-                }
-                else if (type === 'Mars') {
-                    // المريخ: أحمر
-                    colorObj.setHSL(0.02, 0.9, 0.4 + Math.random()*0.1);
-                }
-                else if (type === 'Jupiter') {
-                    // المشتري: خطوط غازية
-                    x *= 1.3; y *= 1.3; z *= 1.3;
-                    const bands = Math.sin(y * 3.0);
-                    if (bands > 0.5) colorObj.setHSL(0.08, 0.6, 0.5); // بني فاتح
-                    else if (bands < -0.5) colorObj.setHSL(0.04, 0.7, 0.35); // بني غامق
-                    else colorObj.setHSL(0.1, 0.4, 0.7); // كريمي
-                }
-                else if (type === 'Saturn') {
-                    // زحل: الكوكب + الحلقات
-                    if (Math.random() > 0.4) {
-                        // الحلقات
-                        const ang = Math.random() * Math.PI * 2;
-                        const dist = 7 + Math.random() * 5;
-                        x = Math.cos(ang) * dist;
-                        z = Math.sin(ang) * dist;
-                        y = (Math.random() - 0.5) * 0.2;
-                        if(dist > 9 && dist < 9.5) y = 1000; // فراغ الحلقة
-                        colorObj.setHSL(0.1 + (dist/30), 0.6, 0.5);
-                    } else {
-                        colorObj.setHSL(0.12, 0.5, 0.6);
-                    }
-                }
-                else if (type === 'Uranus') {
-                    // أورانوس: سماوي باهت
-                    colorObj.setHSL(0.5, 0.6, 0.7);
-                    // حلقة عمودية رقيقة
-                    if (Math.random() > 0.96) {
-                        const ang = Math.random() * Math.PI * 2;
-                        const d = 8 + Math.random();
-                        x = Math.cos(ang)*d; y = Math.sin(ang)*d; z = 0;
-                    }
-                }
-                else if (type === 'Neptune') {
-                    // نبتون: أزرق عميق
-                    colorObj.setHSL(0.65, 0.8, 0.35);
-                }
-                else {
-                    // Galaxy (المجرة)
-                    const arms = 5;
-                    const spin = i % arms;
-                    const rad = Math.random() * 10;
-                    const ang = spin * (Math.PI*2/arms) + rad * 0.7;
-                    x = Math.cos(ang)*rad + (Math.random()-0.5);
-                    z = Math.sin(ang)*rad + (Math.random()-0.5);
-                    y = (Math.random()-0.5) * (8 / (rad+1));
-                    colorObj.setHSL(0.6 + rad/20, 0.8, 0.6);
-                }
-
+                
                 positions.push(x, y, z);
-                colors.push(colorObj.r, colorObj.g, colorObj.b);
+                colors.push(color.r, color.g, color.b);
             }
 
-            geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            geometry.userData.originalPositions = Float32Array.from(positions);
-
-            particles = new THREE.Points(geometry, material);
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            geo.userData.original = Float32Array.from(positions);
+            particles = new THREE.Points(geo, material);
             scene.add(particles);
         }
 
-        function createGlowTexture() {
-            const c = document.createElement('canvas');
-            c.width = 32; c.height = 32;
+        function createTexture() {
+            const c = document.createElement('canvas'); c.width=32; c.height=32;
             const ctx = c.getContext('2d');
             const g = ctx.createRadialGradient(16,16,0,16,16,16);
             g.addColorStop(0,'rgba(255,255,255,1)');
-            g.addColorStop(0.5,'rgba(255,255,255,0.2)');
             g.addColorStop(1,'rgba(0,0,0,0)');
-            ctx.fillStyle = g; ctx.fillRect(0,0,32,32);
+            ctx.fillStyle=g; ctx.fillRect(0,0,32,32);
             return new THREE.CanvasTexture(c);
         }
 
@@ -308,85 +216,54 @@
             const canvas = document.getElementById('cam-preview');
             const ctx = canvas.getContext('2d');
 
-            // إعداد MediaPipe بنسخة ثابتة
-            const hands = new Hands({locateFile: (file) => {
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`;
-            }});
-
+            const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
             hands.setOptions({maxNumHands: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});
 
             hands.onResults(res => {
-                document.getElementById('loader').style.display = 'none';
+                document.getElementById('loading').style.display = 'none';
                 ctx.clearRect(0,0,canvas.width,canvas.height);
                 ctx.drawImage(res.image, 0, 0, canvas.width, canvas.height);
-                
-                if (res.multiHandLandmarks.length > 0) {
+                if(res.multiHandLandmarks.length > 0) {
                     handState.detected = true;
                     const lm = res.multiHandLandmarks[0];
-                    drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#00ffff'});
-                    
-                    // حساب الإحداثيات للدوران
+                    drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#0ff'});
                     handState.x = (lm[9].x - 0.5) * 2;
                     handState.y = (lm[9].y - 0.5) * 2;
-
-                    // حساب المسافة للتكبير
                     const d = Math.hypot(lm[8].x - lm[4].x, lm[8].y - lm[4].y);
-                    handState.expansion = 0.5 + d * 5.0; // حساسية التكبير
+                    handState.expansion = 0.5 + d * 5;
                 } else {
                     handState.detected = false;
                 }
             });
 
-            // محاولة تشغيل الكاميرا
-            const cameraUtils = new Camera(video, {
+            const cam = new Camera(video, {
                 onFrame: async () => { await hands.send({image: video}); },
                 width: 320, height: 240
             });
-            
-            cameraUtils.start().catch(e => {
-                showError("تعذر تشغيل الكاميرا. تأكد من السماح للمتصفح بالوصول إليها.");
-            });
+            cam.start().catch(e => logError("Camera Access Denied: " + e.message));
         }
 
         function initGUI() {
-            const gui = new GUI({ title: 'Planetary System' });
-            gui.add(config, 'shape', ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Galaxy Spiral']).name('Select Planet').onChange(generateShape);
-            gui.add(config, 'size', 0.01, 0.2).onChange(v => material.size = v);
-            
+            const gui = new GUI({ title: 'Planets' });
+            gui.add(config, 'shape', ['Earth', 'Sun', 'Galaxy', 'Mars', 'Jupiter']).onChange(generateShape);
             gui.domElement.style.top = '100px';
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            
-            // Hand Interaction Logic
             if(handState.detected) {
                 controls.autoRotate = false;
-                smoothRot.x = THREE.MathUtils.lerp(smoothRot.x, handState.y, 0.1);
-                smoothRot.y = THREE.MathUtils.lerp(smoothRot.y, -handState.x, 0.1);
-                
-                particles.rotation.x = smoothRot.x;
-                particles.rotation.y += smoothRot.y * 0.1;
-
-                const targetScale = Math.max(0.2, Math.min(3.0, handState.expansion));
-                particles.scale.setScalar(THREE.MathUtils.lerp(particles.scale.x, targetScale, 0.1));
+                smooth.x = THREE.MathUtils.lerp(smooth.x, handState.y, 0.1);
+                smooth.y = THREE.MathUtils.lerp(smooth.y, -handState.x, 0.1);
+                particles.rotation.x = smooth.x;
+                particles.rotation.y += smooth.y * 0.1;
+                particles.scale.setScalar(THREE.MathUtils.lerp(particles.scale.x, handState.expansion, 0.1));
             } else {
-                controls.autoRotate = config.autoRotate;
-                particles.rotation.y += 0.0005;
-                // Idle breathe animation
-                particles.scale.setScalar(1.0 + Math.sin(Date.now()*0.001)*0.05);
+                controls.autoRotate = true;
+                particles.scale.setScalar(1 + Math.sin(Date.now()*0.001)*0.05);
             }
-
-            // Particles visual update
-            particles.geometry.attributes.position.needsUpdate = true;
             controls.update();
             renderer.render(scene, camera);
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
         }
     </script>
 </body>
