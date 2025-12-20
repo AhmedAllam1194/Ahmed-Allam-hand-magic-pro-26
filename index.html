@@ -1,409 +1,342 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MAGIC HAND - Cinematic Experience</title>
+    <title>Magic Planet Control - Ahmed Allam</title>
     
-    <!-- Typography: Cinematic & Arabic -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@1,400;1,700&family=Cinzel:wght@400;700&family=Montserrat:wght@300;600&display=swap" rel="stylesheet">
+    <!-- خطوط سينمائية -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        /* CORE UI SETUP */
-        body { margin: 0; overflow: hidden; background-color: #050508; font-family: 'Montserrat', sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Tajawal', sans-serif; user-select: none; }
         
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        
-        /* UI OVERLAY LAYER */
+        /* واجهة المستخدم */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+            pointer-events: none; z-index: 10;
         }
 
-        /* TOP TITLES */
-        .header { margin-top: 40px; text-align: center; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        /* العنوان */
+        #header {
+            position: absolute; top: 30px; width: 100%; text-align: center;
+        }
         h1 {
-            font-family: 'Cinzel', serif; font-size: 3rem; color: #f0f0f5; letter-spacing: 0.5rem;
-            margin: 0; font-weight: 400; opacity: 0; animation: fadeDown 2s ease-out forwards 0.5s;
+            font-family: 'Cinzel', serif; font-size: 3rem; color: #fff; margin: 0;
+            text-shadow: 0 0 20px rgba(0, 150, 255, 0.8);
+            letter-spacing: 5px;
         }
         .subtitle {
-            font-size: 0.9rem; color: #8888aa; letter-spacing: 0.2rem; text-transform: uppercase;
-            margin-top: 10px; opacity: 0; animation: fadeUp 2s ease-out forwards 1s;
+            font-size: 1rem; color: #aaa; letter-spacing: 2px; text-transform: uppercase;
         }
 
-        /* ARABIC ATMOSPHERIC TEXT */
-        #arabic-overlay {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-family: 'Amiri', serif; font-size: 2.5rem; color: rgba(255, 255, 255, 0.85);
-            text-align: center; width: 100%; pointer-events: none;
-            text-shadow: 0 0 15px rgba(100, 200, 255, 0.4);
-            opacity: 0; transition: opacity 1.5s ease-in-out;
+        /* تعليمات الحالة */
+        #status-text {
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            font-size: 1.2rem; color: #fff; text-shadow: 0 0 10px #000;
+            background: rgba(0,0,0,0.5); padding: 10px 30px; border-radius: 30px;
+            border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s;
         }
 
-        /* CAMERA FEED (Bottom Center) */
+        /* الكاميرا */
         #cam-wrapper {
-            margin-bottom: 30px; width: 200px; height: 120px;
-            border: 1px solid rgba(255,255,255,0.15); border-radius: 12px;
-            overflow: hidden; opacity: 0; animation: fadeUp 2s ease-out forwards 1.5s;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8); backdrop-filter: blur(5px);
-            position: relative;
+            position: absolute; bottom: 30px; right: 30px;
+            width: 200px; height: 150px;
+            border-radius: 15px; overflow: hidden;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            background: #000; box-shadow: 0 0 20px rgba(0,255,255,0.1);
         }
         #video-input { 
-            width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); 
-            opacity: 0.6; filter: grayscale(100%) contrast(1.2);
-        }
-        .cam-label {
-            position: absolute; bottom: 5px; left: 0; width: 100%; text-align: center;
-            font-size: 9px; color: rgba(255,255,255,0.4); letter-spacing: 2px;
+            width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0.6;
         }
 
-        /* LOADING */
-        #loader {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #fff; letter-spacing: 4px; font-size: 12px; z-index: 20;
+        /* زر البدء */
+        #start-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-
-        @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        #start-btn {
+            background: linear-gradient(45deg, #00aaff, #0044ff);
+            border: none; padding: 20px 60px; color: white; font-size: 1.5rem;
+            border-radius: 50px; cursor: pointer; font-family: 'Tajawal', sans-serif;
+            box-shadow: 0 0 30px rgba(0, 100, 255, 0.6);
+            transition: transform 0.2s;
+        }
+        #start-btn:hover { transform: scale(1.1); }
     </style>
 </head>
 <body>
 
-    <!-- UI STRUCTURE -->
+    <!-- شاشة البداية -->
+    <div id="start-overlay">
+        <h1 style="margin-bottom: 20px;">التحكم السحري بالكواكب</h1>
+        <button id="start-btn">ابدأ التجربة</button>
+        <p style="color: #666; margin-top: 15px;">By: Ahmed Allam</p>
+    </div>
+
+    <!-- الواجهة -->
     <div id="ui-layer">
-        <div class="header">
-            <h1>MAGIC HAND</h1>
-            <div class="subtitle">Created by Ahmed Allam</div>
+        <div id="header">
+            <h1>PLANET MASTER</h1>
+            <div class="subtitle">Hand Magic by Ahmed Allam</div>
         </div>
-
-        <div id="arabic-overlay"></div>
-
+        <div id="status-text">بانتظار اليد...</div>
         <div id="cam-wrapper">
             <video id="video-input" playsinline></video>
-            <div class="cam-label">SENSOR ACTIVE</div>
         </div>
     </div>
 
-    <div id="loader">INITIALIZING COSMOS...</div>
     <div id="canvas-container"></div>
 
-    <!-- MODULES -->
+    <!-- المكتبات -->
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
     </script>
-    <!-- MediaPipe -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 
     <script type="module">
         import * as THREE from 'three';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-        // --- CONFIGURATION ---
+        // --- الإعدادات ---
         const CONFIG = {
-            smoothFactor: 0.08,    // Lower = heavier feel
-            rotationSmooth: 0.05,
-            scaleSmooth: 0.05,
-            friction: 0.98,        // Inertia decay
-            minScale: 0.8,
-            maxScale: 2.5,
-            idleAnimSpeed: 0.002
+            smooth: 0.1,      // نعومة الحركة
+            rotationSpeed: 3.5, // سرعة الدوران باليد
+            minScale: 0.6,    // الحجم عند القبضة
+            maxScale: 2.2     // الحجم عند فتح اليد
         };
 
-        const ARABIC_PHRASES = [
-            "دخول عالم سحر المجرة",
-            "لمسة تحرّك الفضاء",
-            "إحساس الحركة في الفراغ",
-            "حين تلتقي اليد بالطاقة",
-            "تجربة لمس الكواكب"
-        ];
-
-        // --- STATE MANAGEMENT ---
         const state = {
-            handsDetected: false,
-            targetPos: new THREE.Vector3(),
-            currentPos: new THREE.Vector3(),
-            velocity: new THREE.Vector3(),
-            
-            targetRotZ: 0,
-            currentRotZ: 0,
-            
-            targetScale: 1,
-            currentScale: 0, // Starts at 0 to pop in
-
-            planetIndex: 0,
-            lastPhraseTime: 0,
-            phraseIndex: 0
+            handDetected: false,
+            handOpenness: 1.0, // 0 = fist, 1 = open
+            handX: 0, handY: 0,
+            targetScale: 1.0,
+            targetRotX: 0, targetRotY: 0
         };
 
-        // --- SCENE SETUP ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020205, 0.015); // Deep space fog
+        let scene, camera, renderer, composer;
+        let earth, atmosphere, clouds;
+        let starField;
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 12);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-        container.appendChild(renderer.domElement);
-
-        // --- POST PROCESSING (BLOOM) ---
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 1.2;
-        bloomPass.radius = 0.5;
-        
-        const outputPass = new OutputPass();
-        const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
-        composer.addPass(outputPass);
-
-        // --- LIGHTING ---
-        const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
-        scene.add(ambientLight);
-
-        const mainLight = new THREE.DirectionalLight(0xfff0dd, 2);
-        mainLight.position.set(10, 10, 10);
-        scene.add(mainLight);
-
-        const handLight = new THREE.PointLight(0x00aaff, 0, 10); // Interactive light
-        scene.add(handLight);
-
-        // --- PLANET GENERATION (PROCEDURAL) ---
-        
-        // 1. SATURN (Procedural Shader)
-        function createSaturn() {
-            const group = new THREE.Group();
+        // --- تهيئة المشهد ---
+        function init() {
+            const container = document.getElementById('canvas-container');
             
-            // Body
-            const geometry = new THREE.SphereGeometry(1.5, 64, 64);
-            const material = new THREE.MeshStandardMaterial({
-                color: 0xccaa88,
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.z = 10;
+
+            renderer = new THREE.WebGLRenderer({ antialias: false }); // Antialias off for post-processing
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            container.appendChild(renderer.domElement);
+
+            // Post Processing (Bloom)
+            const renderScene = new RenderPass(scene, camera);
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+            bloomPass.threshold = 0.1; bloomPass.strength = 1.2; bloomPass.radius = 0.5;
+            
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+            composer.addPass(new OutputPass());
+
+            // إضاءة
+            const sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
+            sunLight.position.set(5, 3, 5);
+            scene.add(sunLight);
+            
+            const ambient = new THREE.AmbientLight(0x333333);
+            scene.add(ambient);
+
+            // إضافة الأرض
+            createEarth();
+            createStars();
+
+            window.addEventListener('resize', onResize);
+            animate();
+        }
+
+        function createEarth() {
+            const earthGroup = new THREE.Group();
+
+            // 1. الكوكب (Textures from robust CDNs)
+            const loader = new THREE.TextureLoader();
+            
+            const geo = new THREE.SphereGeometry(2, 64, 64);
+            const mat = new THREE.MeshStandardMaterial({
+                map: loader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'),
+                bumpMap: loader.load('https://unpkg.com/three-globe/example/img/earth-topology.png'),
+                bumpScale: 0.05,
                 roughness: 0.6,
-                metalness: 0.1,
+                metalness: 0.1
             });
-            const planet = new THREE.Mesh(geometry, material);
-            group.add(planet);
+            earth = new THREE.Mesh(geo, mat);
+            earthGroup.add(earth);
 
-            // Rings
-            const ringGeo = new THREE.RingGeometry(2.0, 3.5, 128);
-            var pos = ringGeo.attributes.position;
-            var v3 = new THREE.Vector3();
-            for (let i = 0; i < pos.count; i++){
-                v3.fromBufferAttribute(pos, i);
-                ringGeo.attributes.uv.setXY(i, v3.length() < 2.8 ? 0 : 1, 1);
-            }
-            
-            const ringMat = new THREE.MeshStandardMaterial({
-                color: 0xaa8866,
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.8,
-                roughness: 0.8
+            // 2. الغيوم
+            const cloudGeo = new THREE.SphereGeometry(2.03, 64, 64);
+            const cloudMat = new THREE.MeshStandardMaterial({
+                map: loader.load('https://unpkg.com/three-globe/example/img/earth-clouds.png'),
+                transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, side: THREE.DoubleSide
             });
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = Math.PI / 2;
-            group.add(ring);
+            clouds = new THREE.Mesh(cloudGeo, cloudMat);
+            earthGroup.add(clouds);
 
-            return group;
-        }
+            // 3. الغلاف الجوي (Atmosphere Glow)
+            const atmoGeo = new THREE.SphereGeometry(2.2, 64, 64);
+            const atmoMat = new THREE.MeshBasicMaterial({
+                color: 0x00aaff, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, side: THREE.BackSide
+            });
+            atmosphere = new THREE.Mesh(atmoGeo, atmoMat);
+            earthGroup.add(atmosphere);
 
-        const activePlanet = createSaturn();
-        scene.add(activePlanet);
-
-        // --- BACKGROUND STARS ---
-        const starGeo = new THREE.BufferGeometry();
-        const starCount = 2000;
-        const starPos = new Float32Array(starCount * 3);
-        for(let i=0; i<starCount*3; i++) {
-            starPos[i] = (Math.random() - 0.5) * 60;
-        }
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.05, transparent: true, opacity: 0.8});
-        const stars = new THREE.Points(starGeo, starMat);
-        scene.add(stars);
-
-
-        // --- PHYSICS & INTERACTION LOOP ---
-        
-        function updatePhysics() {
-            // 1. POSITION (Spring/Lerp)
-            if (state.handsDetected) {
-                // Move towards hands
-                state.currentPos.lerp(state.targetPos, CONFIG.smoothFactor);
-                
-                // Calculate simulated velocity for inertia later
-                state.velocity.copy(state.targetPos).sub(state.currentPos).multiplyScalar(0.1);
-                
-                // Rotation (Steering Wheel logic)
-                state.currentRotZ = THREE.MathUtils.lerp(state.currentRotZ, state.targetRotZ, CONFIG.rotationSmooth);
-                
-                // Scale (Breathing)
-                state.currentScale = THREE.MathUtils.lerp(state.currentScale, state.targetScale, CONFIG.scaleSmooth);
-                
-                // Interactive Light
-                handLight.intensity = THREE.MathUtils.lerp(handLight.intensity, 2, 0.1);
-                handLight.position.copy(state.currentPos);
-                handLight.position.z += 2;
-
-            } else {
-                // INERTIA MODE (Floating away)
-                state.currentPos.add(state.velocity);
-                state.velocity.multiplyScalar(CONFIG.friction); // Apply drag
-                
-                // Return to idle scale
-                state.currentScale = THREE.MathUtils.lerp(state.currentScale, 0.8, 0.02);
-                
-                // Idle Rotation
-                activePlanet.rotation.y += CONFIG.idleAnimSpeed;
-                
-                // Dim light
-                handLight.intensity = THREE.MathUtils.lerp(handLight.intensity, 0, 0.05);
-            }
-
-            // Apply transforms to object
-            activePlanet.position.copy(state.currentPos);
-            activePlanet.scale.setScalar(state.currentScale);
+            scene.add(earthGroup);
             
-            // Apply Z rotation (tilting) plus constant idle spin
-            activePlanet.rotation.z = state.currentRotZ;
-            activePlanet.rotation.x = 0.3; // Default tilt
-            
-            // Subtle "Alive" Bobbing
-            const time = performance.now() * 0.001;
-            activePlanet.position.y += Math.sin(time) * 0.005;
+            // حفظ المرجع للدوران
+            state.planetObj = earthGroup;
         }
 
-        // --- ARABIC TEXT LOGIC ---
-        const textElement = document.getElementById('arabic-overlay');
-        
-        function updateText() {
-            if (state.handsDetected) {
-                textElement.style.opacity = 0; // Hide when interacting
-            } else {
-                // Cycle text when idle
-                const now = performance.now();
-                if (now - state.lastPhraseTime > 4000) {
-                    state.lastPhraseTime = now;
-                    state.phraseIndex = (state.phraseIndex + 1) % ARABIC_PHRASES.length;
-                    
-                    // Fade out, swap, fade in
-                    textElement.style.opacity = 0;
-                    setTimeout(() => {
-                        textElement.innerText = ARABIC_PHRASES[state.phraseIndex];
-                        textElement.style.opacity = 1;
-                    }, 1000);
-                }
+        function createStars() {
+            const geo = new THREE.BufferGeometry();
+            const pos = [];
+            for(let i=0; i<3000; i++) {
+                pos.push((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*50 - 20);
             }
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+            const mat = new THREE.PointsMaterial({color: 0xffffff, size: 0.05, transparent: true, opacity: 0.8});
+            starField = new THREE.Points(geo, mat);
+            scene.add(starField);
         }
 
-        // --- MEDIAPIPE HAND TRACKING ---
-        const videoElement = document.getElementById('video-input');
-        
-        function onHandsResults(results) {
-            document.getElementById('loader').style.display = 'none';
-
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length === 2) {
-                state.handsDetected = true;
-
-                const hand1 = results.multiHandLandmarks[0][9]; // Middle finger knuckle
-                const hand2 = results.multiHandLandmarks[1][9];
-
-                // 1. Map Coordinates (0-1) to World Space (-X to +X)
-                // Note: Video is mirrored via CSS, but data matches original.
-                // We create a viewing plane at Z=0.
-                const aspect = window.innerWidth / window.innerHeight;
-                const fovH = 2 * Math.tan((camera.fov * Math.PI / 180) / 2) * 12; // Distance 12
-                const fovW = fovH * aspect;
-
-                const h1x = (0.5 - hand1.x) * fovW; // Flip X
-                const h1y = (0.5 - hand1.y) * fovH;
-                const h2x = (0.5 - hand2.x) * fovW;
-                const h2y = (0.5 - hand2.y) * fovH;
-
-                // 2. Midpoint (Position)
-                const targetX = (h1x + h2x) / 2;
-                const targetY = (h1y + h2y) / 2;
-                state.targetPos.set(targetX, targetY, 0);
-
-                // 3. Distance (Scale)
-                const dist = Math.sqrt(Math.pow(h2x - h1x, 2) + Math.pow(h2y - h1y, 2));
-                // Map distance roughly 2 to 10 world units to scale
-                const scaleNorm = THREE.MathUtils.mapLinear(dist, 2, 8, CONFIG.minScale, CONFIG.maxScale);
-                state.targetScale = THREE.MathUtils.clamp(scaleNorm, CONFIG.minScale, CONFIG.maxScale);
-
-                // 4. Angle (Rotation)
-                const dy = h2y - h1y;
-                const dx = h2x - h1x;
-                // Add smooth steering logic
-                state.targetRotZ = Math.atan2(dy, dx);
-
-            } else {
-                state.handsDetected = false;
-            }
-        }
-
-        const hands = new Hands({locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-        }});
-        hands.setOptions({
-            maxNumHands: 2,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
-        });
-        hands.onResults(onHandsResults);
-
-        const cameraUtils = new Camera(videoElement, {
-            onFrame: async () => { await hands.send({image: videoElement}); },
-            width: 640,
-            height: 480
-        });
-        cameraUtils.start();
-
-
-        // --- ANIMATION LOOP ---
+        // --- حلقة التحريك والفيزياء ---
         function animate() {
             requestAnimationFrame(animate);
-            
-            updatePhysics();
-            updateText();
-            
+
+            if (state.handDetected) {
+                // 1. التحكم بالحجم (Open vs Fist)
+                // Linear Interpolation for smooth resizing
+                const targetS = THREE.MathUtils.lerp(CONFIG.minScale, CONFIG.maxScale, state.handOpenness);
+                const currentS = state.planetObj.scale.x;
+                const smoothS = THREE.MathUtils.lerp(currentS, targetS, CONFIG.smooth);
+                state.planetObj.scale.setScalar(smoothS);
+
+                // تغيير لون الغلاف الجوي حسب الحالة
+                // يد مفتوحة = أزرق (طاقة)، قبضة = أحمر (ضغط)
+                const colorTarget = new THREE.Color().setHSL(state.handOpenness > 0.5 ? 0.6 : 0.0, 1.0, 0.5);
+                atmosphere.material.color.lerp(colorTarget, 0.1);
+
+                // 2. التحكم بالدوران (Rotation 360)
+                // نحسب الفرق بين موضع اليد ومركز الشاشة
+                const rotX = state.handY * CONFIG.rotationSpeed; // Pitch
+                const rotY = state.handX * CONFIG.rotationSpeed; // Yaw
+                
+                // نعومة الدوران
+                state.planetObj.rotation.x = THREE.MathUtils.lerp(state.planetObj.rotation.x, rotX, CONFIG.smooth);
+                state.planetObj.rotation.y = THREE.MathUtils.lerp(state.planetObj.rotation.y, rotY, CONFIG.smooth);
+
+                // نص الحالة
+                const status = document.getElementById('status-text');
+                if (state.handOpenness < 0.3) {
+                    status.innerText = "قبضة: انكماش";
+                    status.style.borderColor = "#ff0000";
+                } else {
+                    status.innerText = "كف مفتوح: تمدد";
+                    status.style.borderColor = "#00aaff";
+                }
+
+            } else {
+                // دوران تلقائي عند عدم وجود يد
+                state.planetObj.rotation.y += 0.002;
+                // عودة للحجم الطبيعي
+                const s = THREE.MathUtils.lerp(state.planetObj.scale.x, 1, 0.05);
+                state.planetObj.scale.setScalar(s);
+                atmosphere.material.color.lerp(new THREE.Color(0x00aaff), 0.05);
+                document.getElementById('status-text').innerText = "بانتظار اليد...";
+                document.getElementById('status-text').style.borderColor = "#ffffff";
+            }
+
+            // حركة الغيوم المستمرة
+            clouds.rotation.y += 0.0005;
+
             composer.render();
         }
 
-        // --- RESIZE HANDLER ---
-        window.addEventListener('resize', () => {
+        // --- MediaPipe ---
+        function initMediaPipe() {
+            const video = document.getElementById('video-input');
+            const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+            
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.7
+            });
+
+            hands.onResults(onResults);
+
+            const cameraUtils = new Camera(video, {
+                onFrame: async () => { await hands.send({image: video}); },
+                width: 320, height: 240
+            });
+            
+            cameraUtils.start();
+        }
+
+        function onResults(results) {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                state.handDetected = true;
+                const lm = results.multiHandLandmarks[0];
+
+                // 1. حساب موضع اليد (للدوران)
+                // النقطة 9 هي منتصف الكف
+                // تحويل الإحداثيات من 0-1 إلى -1 إلى 1
+                state.handX = (1 - lm[9].x) * 2 - 1; 
+                state.handY = (lm[9].y * 2 - 1); 
+
+                // 2. حساب الانفتاح (Openness) للتكبير
+                // المسافة بين المعصم (0) ورأس الوسطى (12)
+                const wrist = lm[0];
+                const tip = lm[12];
+                const base = lm[0]; // المعصم كنقطة مرجعية
+                
+                // حساب المسافة الإقليدية
+                const distance = Math.sqrt(Math.pow(tip.x - wrist.x, 2) + Math.pow(tip.y - wrist.y, 2));
+                
+                // معايرة المسافة (تقريباً 0.1 للقبضة و 0.4 لليد المفتوحة)
+                // نحولها لقيمة بين 0 و 1
+                let openVal = (distance - 0.15) * 3.5;
+                state.handOpenness = Math.max(0, Math.min(1, openVal));
+
+            } else {
+                state.handDetected = false;
+            }
+        }
+
+        function onResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // تشغيل
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('start-overlay').style.display = 'none';
+            init();
+            initMediaPipe();
         });
-
-        // Start Text Loop
-        textElement.innerText = ARABIC_PHRASES[0];
-        textElement.style.opacity = 1;
-
-        animate();
 
     </script>
 </body>
