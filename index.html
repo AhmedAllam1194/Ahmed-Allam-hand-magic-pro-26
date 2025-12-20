@@ -3,37 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Hand-Controlled Particle System</title>
+    <title>Magic & Space Particle System</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Segoe UI', sans-serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        #video-input { position: absolute; top: 0; left: 0; visibility: hidden; width: 0; height: 0; }
+        #video-input { position: absolute; visibility: hidden; }
         
-        /* Loading Overlay */
+        /* UI Overlay */
         #loader {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: white; font-size: 24px; z-index: 10; pointer-events: none;
-            text-align: center;
+            color: #00ffff; font-size: 24px; z-index: 10; pointer-events: none;
+            text-shadow: 0 0 10px #00ffff; text-align: center;
         }
-        #loader span { display: block; font-size: 14px; opacity: 0.7; margin-top: 10px; }
-
-        /* Camera Preview (Optional, helpful for user positioning) */
         #cam-preview {
             position: absolute; bottom: 20px; left: 20px; width: 160px; height: 120px;
-            z-index: 5; border-radius: 10px; border: 2px solid rgba(255,255,255,0.2);
-            transform: scaleX(-1); /* Mirror effect */
-            background: #000;
+            z-index: 5; border-radius: 12px; border: 2px solid rgba(0, 255, 255, 0.3);
+            transform: scaleX(-1); background: #111; box-shadow: 0 0 15px rgba(0,255,255,0.1);
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">Initializing AI & 3D Engine...<br><span>Please allow camera access</span></div>
+    <div id="loader">تحميل محرك الفضاء والسحر...<br><span style="font-size:14px; color:white">يرجى السماح للكاميرا بالعمل</span></div>
     <video id="video-input"></video>
     <canvas id="cam-preview"></canvas>
     <div id="canvas-container"></div>
 
-    <!-- Import Maps for Three.js and Lil-GUI -->
     <script type="importmap">
         {
             "imports": {
@@ -44,7 +39,7 @@
         }
     </script>
 
-    <!-- MediaPipe Dependencies -->
+    <!-- MediaPipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -55,24 +50,21 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import GUI from 'lil-gui';
 
-        // --- Configuration ---
+        // --- إعدادات النظام ---
         const config = {
-            particleCount: 15000,
-            particleSize: 0.15,
-            color: '#00ffff',
-            shape: 'Heart',
-            handInfluence: 1.0, // Multiplier for hand movement
+            particleCount: 25000, // زيادة العدد لواقعية أكثر
+            particleSize: 0.12,
+            shape: 'Galaxy Spiral', // الشكل الافتراضي
+            brightness: 1.0,
             autoRotate: true
         };
 
-        // --- Global Variables ---
         let scene, camera, renderer, particles, geometry, material;
         let controls;
-        let handExpansion = 1.0; // 0 = Closed, 1 = Open
+        let handExpansion = 1.0;
         let targetExpansion = 1.0;
         const clock = new THREE.Clock();
 
-        // --- Initialization ---
         initThree();
         initGUI();
         initMediaPipe();
@@ -81,305 +73,273 @@
         function initThree() {
             const container = document.getElementById('canvas-container');
             
-            // Scene
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x050505, 0.02);
+            // خلفية فضاء عميق
+            scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
-            // Camera
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 15;
+            camera.position.z = 18;
+            camera.position.y = 5;
 
-            // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            // تفعيل نظام الألوان المتقدم
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
             container.appendChild(renderer.domElement);
 
-            // Controls
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.autoRotate = config.autoRotate;
-            controls.autoRotateSpeed = 2.0;
+            controls.autoRotateSpeed = 0.5;
 
-            // Texture for particles (soft glow)
-            const sprite = generateSprite();
-
-            // Material
+            // خامة الجزيئات (تدعم الألوان المتعددة لكل نقطة)
             material = new THREE.PointsMaterial({
                 size: config.particleSize,
-                color: new THREE.Color(config.color),
-                map: sprite,
-                blending: THREE.AdditiveBlending,
+                map: generateSparkTexture(),
+                blending: THREE.AdditiveBlending, // دمج ضوئي للتوهج
                 depthWrite: false,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.9,
+                vertexColors: true // تفعيل ألوان مختلفة لكل جزيء
             });
 
-            // Initial Geometry
             generateParticles(config.shape);
-
-            // Resize Event
             window.addEventListener('resize', onWindowResize);
         }
 
-        // --- Shape Generation Logic ---
+        // --- منطق بناء الأشكال الفضائية والسحرية ---
         function generateParticles(type) {
             if (particles) scene.remove(particles);
 
+            const count = config.particleCount;
             const positions = [];
-            const cnt = config.particleCount;
+            const colors = [];
+            const colorObj = new THREE.Color();
 
-            for (let i = 0; i < cnt; i++) {
+            for (let i = 0; i < count; i++) {
                 let x, y, z;
+                let r, g, b;
 
-                if (type === 'Heart') {
-                    // parametric heart
-                    const phi = Math.random() * Math.PI * 2;
-                    const theta = Math.random() * Math.PI;
-                    // Heart formula approximation
-                    x = 16 * Math.pow(Math.sin(phi), 3);
-                    y = 13 * Math.cos(phi) - 5 * Math.cos(2 * phi) - 2 * Math.cos(3 * phi) - Math.cos(4 * phi);
-                    z = 4 * Math.cos(theta) * Math.sin(phi); // Thickness
+                // 1. مجرة لولبية (Galaxy Spiral)
+                if (type === 'Galaxy Spiral') {
+                    const branches = 3; // عدد أذرع المجرة
+                    const spin = i % branches;
+                    const radius = Math.random() * Math.random() * 10; // توزيع كثيف في المركز
+                    const angle = spin * (Math.PI * 2 / branches) + (radius * 0.5); // انحناء الأذرع
                     
-                    // Normalize scaling
-                    x *= 0.3; y *= 0.3; z *= 0.3;
-                } 
-                else if (type === 'Flower') {
-                    // Rose curve in 3D
-                    const k = 4; // petals
-                    const theta = Math.random() * Math.PI * 2;
-                    const r = Math.cos(k * theta);
-                    const r2 = Math.random() * 5; // spread
-                    x = r2 * Math.cos(theta) * r;
-                    y = r2 * Math.sin(theta) * r;
-                    z = (Math.random() - 0.5) * 2;
-                }
-                else if (type === 'Saturn') {
-                    // Planet + Ring
-                    const r = Math.random();
-                    if (r > 0.4) {
-                        // Ring
-                        const ang = Math.random() * Math.PI * 2;
-                        const dist = 6 + Math.random() * 3;
-                        x = Math.cos(ang) * dist;
-                        z = Math.sin(ang) * dist;
-                        y = (Math.random() - 0.5) * 0.5;
+                    const randomX = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 1.5;
+                    const randomY = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 1.5;
+                    const randomZ = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 1.5;
+
+                    x = Math.cos(angle) * radius + randomX;
+                    y = randomY * 0.5; // تسطيح المجرة
+                    z = Math.sin(angle) * radius + randomZ;
+
+                    // تلوين: المركز أصفر/أبيض، الأطراف بنفسجي/أزرق
+                    const mixColor = Math.random();
+                    if (radius < 2) {
+                        colorObj.setHSL(0.1, 0.8, 0.8); // برتقالي ذهبي
                     } else {
-                        // Planet body
-                        const phi = Math.acos(-1 + (2 * Math.random()));
-                        const theta = Math.sqrt(config.particleCount * Math.PI) * phi;
-                        const rad = 3.5;
-                        x = rad * Math.cos(theta) * Math.sin(phi);
-                        y = rad * Math.sin(theta) * Math.sin(phi);
-                        z = rad * Math.cos(phi);
+                        colorObj.setHSL(0.6 + mixColor * 0.2, 0.8, 0.5); // أزرق وبنفسجي
                     }
-                    // Tilt
-                    const rotZ = Math.cos(Math.PI / 6) * z - Math.sin(Math.PI / 6) * y;
-                    const rotY = Math.sin(Math.PI / 6) * z + Math.cos(Math.PI / 6) * y;
-                    y = rotY; z = rotZ;
+                } 
+                
+                // 2. ثقب أسود (Black Hole / Accretion Disk)
+                else if (type === 'Black Hole') {
+                    const angle = Math.random() * Math.PI * 2;
+                    // حلقة مفرغة من الوسط
+                    const radius = 4 + Math.random() * 6; 
+                    const spread = (Math.random() - 0.5);
+
+                    x = Math.cos(angle) * radius;
+                    y = spread * (radius * 0.1); // سمك القرص
+                    z = Math.sin(angle) * radius;
+
+                    // تلوين: نار وبرتقالي
+                    // كلما اقترب من المركز (نصف القطر 4) يكون أحمر، وكلما ابتعد برتقالي
+                    const intensity = (10 - radius) / 6; 
+                    colorObj.setHSL(0.05 + Math.random()*0.1, 1.0, 0.3 + intensity * 0.4);
                 }
-                else if (type === 'Buddha (Statue)') {
-                    // Procedural "Meditating Figure" using primitives
-                    const r = Math.random();
-                    
-                    if (r < 0.2) { // Head
-                        const u = Math.random(); const v = Math.random();
-                        const theta = 2 * Math.PI * u; const phi = Math.acos(2 * v - 1);
-                        const rad = 1.5;
-                        x = rad * Math.sin(phi) * Math.cos(theta);
-                        y = rad * Math.sin(phi) * Math.sin(theta) + 3.5;
-                        z = rad * Math.cos(phi);
-                    } else if (r < 0.6) { // Body
-                        const rad = 2.5 * Math.random();
-                        const h = (Math.random() * 4) - 2; // -2 to 2
-                        const ang = Math.random() * Math.PI * 2;
-                        x = rad * Math.cos(ang);
-                        y = h + 0.5;
-                        z = rad * Math.sin(ang);
-                        // taper top
-                        if(y > 1.5) { x *= 0.6; z *= 0.6; }
-                    } else { // Legs/Base
-                        const ang = Math.random() * Math.PI * 2;
-                        const radX = 4 + Math.random();
-                        const radZ = 3 + Math.random();
-                        x = radX * Math.cos(ang);
-                        y = -2 + (Math.random() * 1.5);
-                        z = radZ * Math.sin(ang);
-                    }
-                }
-                else if (type === 'Fireworks') {
-                    // Random sphere explosion
+
+                // 3. بوابة سحرية (Magic Portal)
+                else if (type === 'Magic Portal') {
                     const u = Math.random();
                     const v = Math.random();
+                    // شكل Torus (دونات) عمودية
                     const theta = 2 * Math.PI * u;
-                    const phi = Math.acos(2 * v - 1);
-                    const r = 8 * Math.cbrt(Math.random()); // Even volume distribution
+                    const phi = 2 * Math.PI * v;
+                    const tubeRad = 1.5;
+                    const ringRad = 6;
+                    
+                    x = (ringRad + tubeRad * Math.cos(v * Math.PI * 2)) * Math.cos(u * Math.PI * 2);
+                    z = (ringRad + tubeRad * Math.cos(v * Math.PI * 2)) * Math.sin(u * Math.PI * 2);
+                    y = tubeRad * Math.sin(v * Math.PI * 2);
+
+                    // إضافة جزيئات تتطاير لأعلى (طاقة)
+                    if (Math.random() > 0.7) {
+                        y += Math.random() * 5;
+                        x *= 0.9; z *= 0.9;
+                    }
+
+                    // تلوين: أخضر نيون وسيان (Cyan)
+                    colorObj.setHSL(0.45 + Math.random() * 0.1, 1.0, 0.6);
+                }
+
+                // 4. كرة طاقة كونية (Cosmic Sphere)
+                else if (type === 'Cosmic Sphere') {
+                    const r = 5 * Math.cbrt(Math.random());
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos(2 * Math.random() - 1);
+                    
                     x = r * Math.sin(phi) * Math.cos(theta);
                     y = r * Math.sin(phi) * Math.sin(theta);
                     z = r * Math.cos(phi);
+
+                    // تأثير التفتت للخارج
+                    x += (Math.random()-0.5); 
+                    y += (Math.random()-0.5);
+                    z += (Math.random()-0.5);
+
+                    // تلوين عشوائي سحري
+                    colorObj.setHSL(Math.random(), 0.9, 0.7);
                 }
 
-                // Add some jitter/noise
-                x += (Math.random() - 0.5) * 0.1;
-                y += (Math.random() - 0.5) * 0.1;
-                z += (Math.random() - 0.5) * 0.1;
+                // 5. سديم نجمي (Nebula Cloud)
+                else if (type === 'Nebula Cloud') {
+                   // تكتلات عشوائية باستخدام دالة جيب
+                   const s = Math.random() * 10;
+                   x = (Math.random() - 0.5) * 15;
+                   y = (Math.random() - 0.5) * 10;
+                   z = (Math.random() - 0.5) * 15;
+                   
+                   // تلوين: وردي وأزرق فاتح
+                   const dist = Math.sqrt(x*x + z*z);
+                   colorObj.setHSL(0.8 + (dist/20) * 0.2, 0.7, 0.6);
+                }
 
                 positions.push(x, y, z);
+                colors.push(colorObj.r, colorObj.g, colorObj.b);
             }
 
             geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            
-            // Store original positions for animation reference
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
             geometry.userData.originalPositions = Float32Array.from(positions);
 
             particles = new THREE.Points(geometry, material);
             scene.add(particles);
         }
 
-        // --- Helper: Procedural Texture ---
-        function generateSprite() {
+        // --- مادة الجزيئات (Texture) ---
+        function generateSparkTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 32; canvas.height = 32;
-            const context = canvas.getContext('2d');
-            const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
-            gradient.addColorStop(0, 'rgba(255,255,255,1)');
-            gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
-            gradient.addColorStop(0.5, 'rgba(255,255,255,0.2)');
-            gradient.addColorStop(1, 'rgba(0,0,0,0)');
-            context.fillStyle = gradient;
-            context.fillRect(0, 0, 32, 32);
-            const texture = new THREE.CanvasTexture(canvas);
-            return texture;
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            
+            // رسم نجمة متوهجة بدلاً من دائرة عادية
+            const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            grad.addColorStop(0, 'rgba(255,255,255,1)');
+            grad.addColorStop(0.3, 'rgba(255,255,255,0.4)');
+            grad.addColorStop(0.5, 'rgba(255,255,255,0.1)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 64, 64);
+            
+            // إضافة لمعان صغير في المركز
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(32, 32, 4, 0, Math.PI*2);
+            ctx.fill();
+
+            return new THREE.CanvasTexture(canvas);
         }
 
-        // --- UI Initialization ---
         function initGUI() {
-            const gui = new GUI({ title: 'System Controls' });
+            const gui = new GUI({ title: 'إعدادات الفضاء' });
             
-            const shapeFolder = gui.addFolder('Geometry');
-            shapeFolder.add(config, 'shape', ['Heart', 'Flower', 'Saturn', 'Buddha (Statue)', 'Fireworks']).name('Template').onChange(val => {
-                generateParticles(val);
-            });
+            gui.add(config, 'shape', ['Galaxy Spiral', 'Black Hole', 'Magic Portal', 'Cosmic Sphere', 'Nebula Cloud'])
+               .name('المجسم الكوني')
+               .onChange(val => generateParticles(val));
 
-            const styleFolder = gui.addFolder('Appearance');
-            styleFolder.addColor(config, 'color').name('Particle Color').onChange(val => {
-                material.color.set(val);
-            });
-            styleFolder.add(config, 'particleSize', 0.01, 1).name('Size').onChange(val => {
-                material.size = val;
-            });
-            
-            const animFolder = gui.addFolder('Animation');
-            animFolder.add(config, 'autoRotate').name('Auto Rotate').onChange(val => {
-                controls.autoRotate = val;
-            });
+            gui.add(config, 'particleSize', 0.05, 0.5).name('حجم النجوم').onChange(val => material.size = val);
+            gui.add(config, 'autoRotate').name('دوران تلقائي').onChange(val => controls.autoRotate = val);
 
-            // Mobile-friendly styling adjustments
-            gui.domElement.style.top = '10px';
+            // ستايل الواجهة العربية
+            gui.domElement.style.fontFamily = 'Segoe UI';
             gui.domElement.style.right = '10px';
         }
 
-        // --- MediaPipe Hand Tracking ---
         function initMediaPipe() {
             const videoElement = document.getElementById('video-input');
             const previewCanvas = document.getElementById('cam-preview');
             const previewCtx = previewCanvas.getContext('2d');
 
-            const hands = new Hands({locateFile: (file) => {
-                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-            }});
-
-            hands.setOptions({
-                maxNumHands: 1,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
+            const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
 
             hands.onResults((results) => {
-                // Remove loader on first successful frame
                 document.getElementById('loader').style.display = 'none';
-
-                // Draw preview
-                previewCtx.save();
                 previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                previewCtx.save();
+                previewCtx.scale(-1, 1);
+                previewCtx.translate(-previewCanvas.width, 0);
                 previewCtx.drawImage(results.image, 0, 0, previewCanvas.width, previewCanvas.height);
                 
-                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                    const landmarks = results.multiHandLandmarks[0];
-                    drawConnectors(previewCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
+                if (results.multiHandLandmarks.length > 0) {
+                    const lm = results.multiHandLandmarks[0];
+                    drawConnectors(previewCtx, lm, HAND_CONNECTIONS, {color: '#00ffff', lineWidth: 2});
+
+                    // حساب المسافة للتحكم بالتمدد
+                    const d = Math.hypot(lm[12].x - lm[0].x, lm[12].y - lm[0].y);
+                    const palmSize = Math.hypot(lm[5].x - lm[0].x, lm[5].y - lm[0].y);
+                    let ratio = d / palmSize; // تقريبا 1.0 عند القبضة، 2.0 عند الفتح
                     
-                    // Logic: Calculate distance between Wrist (0) and Middle Finger Tip (12)
-                    // relative to the palm size to estimate "Openness"
-                    const wrist = landmarks[0];
-                    const middleTip = landmarks[12];
-                    const indexBase = landmarks[5]; // Use as reference for hand size
-
-                    // Euclidean distance (approximate in 2D for speed)
-                    const handSize = Math.hypot(indexBase.x - wrist.x, indexBase.y - wrist.y);
-                    const stretch = Math.hypot(middleTip.x - wrist.x, middleTip.y - wrist.y);
-
-                    // Normalize: When fist, stretch approx equals handSize. When open, stretch approx 2x handSize.
-                    let openness = (stretch / handSize) - 0.8; 
-                    openness = Math.max(0.1, Math.min(1.5, openness)); // Clamp
-
-                    // Map openness to target expansion
-                    // Fist (small openness) -> 0.2 expansion
-                    // Open (high openness) -> 1.5 expansion
-                    targetExpansion = openness * 1.5; 
-                } else {
-                    // No hand detected, breathe gently
-                    const time = Date.now() * 0.001;
-                    targetExpansion = 1.0 + Math.sin(time) * 0.2;
+                    // تحويل النسبة إلى معامل تكبير (0.1 = انفجار داخلي، 2.0 = تمدد)
+                    targetExpansion = (ratio - 0.8) * 1.5;
+                    targetExpansion = Math.max(0.1, Math.min(2.5, targetExpansion));
                 }
                 previewCtx.restore();
             });
 
             const cameraUtils = new Camera(videoElement, {
-                onFrame: async () => {
-                    await hands.send({image: videoElement});
-                },
-                width: 320,
-                height: 240
+                onFrame: async () => await hands.send({image: videoElement}),
+                width: 320, height: 240
             });
             cameraUtils.start();
         }
 
-        // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
+            
+            // نعومة الحركة (Interpolation)
+            handExpansion = THREE.MathUtils.lerp(handExpansion, targetExpansion, 0.08);
 
-            const dt = clock.getDelta();
-
-            // Smooth interpolation of hand influence
-            handExpansion = THREE.MathUtils.lerp(handExpansion, targetExpansion, 0.1);
-
-            // Update particles based on hand interaction
             if (particles) {
                 const positions = particles.geometry.attributes.position.array;
                 const originals = particles.geometry.userData.originalPositions;
-                const count = config.particleCount;
+                const time = Date.now() * 0.0005;
 
-                // Simple scaling effect
+                // تطبيق التمدد
                 particles.scale.setScalar(handExpansion);
 
-                // Optional: Dynamic wiggle based on time
-                const time = Date.now() * 0.0005;
-                for(let i=0; i < count; i++) {
-                    // Make them twinkle/move slightly
-                    positions[i*3 + 1] = originals[i*3 + 1] + Math.sin(time + positions[i*3]*0.5) * 0.1;
+                // إضافة حركة حية (Wiggle & Pulse) للجزيئات لتبدو واقعية
+                for(let i=0; i < config.particleCount; i++) {
+                    const idx = i * 3;
+                    // حركة تموجية بسيطة
+                    positions[idx+1] = originals[idx+1] + Math.sin(time + originals[idx]*0.5) * 0.1;
                 }
                 particles.geometry.attributes.position.needsUpdate = true;
                 
-                // Rotation
-                particles.rotation.y += 0.001;
+                // دوران المجرة ببطء
+                particles.rotation.y += 0.0005 + (handExpansion * 0.001); 
             }
 
             controls.update();
             renderer.render(scene, camera);
         }
-
+        
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
