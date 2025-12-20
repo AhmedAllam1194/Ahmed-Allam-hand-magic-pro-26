@@ -3,95 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magical Space Particles - Ultimate</title>
+    <title>Magical Solar System - Ahmed Allam</title>
     
-    <!-- استدعاء خط سحري من Google Fonts -->
+    <!-- خطوط جوجل للفخامة -->
     <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
 
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         #video-input { display: none; }
         
         /* --- تصميم الاسم السحري --- */
         #magic-brand {
-            position: absolute;
-            top: 30px;
-            left: 30px; /* مكان الاسم في أعلى اليسار */
-            z-index: 20; /* فوق الكانفاس */
-            pointer-events: none; /* لكي لا يعيق النقر على الشاشة */
-            font-family: 'Cinzel Decorative', cursive; /* الخط السحري */
-            text-align: left; /* محاذاة لليسار لأن الصفحة RTL */
-            direction: ltr; /* اتجاه النص إنجليزي لضبط الاسم */
+            position: absolute; top: 30px; left: 30px; z-index: 20; pointer-events: none;
+            font-family: 'Cinzel Decorative', cursive; text-align: left; direction: ltr;
         }
-
         .brand-title {
-            display: block;
-            font-size: 38px;
-            font-weight: 900;
-            color: #ffffff;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            /* تأثير التوهج السحري المتدرج */
-            text-shadow: 
-                0 0 5px #00ffff,
-                0 0 15px #00ffff,
-                0 0 30px #0000ff,
-                0 0 50px #0000ff;
+            display: block; font-size: 38px; font-weight: 900; color: #ffffff;
+            text-transform: uppercase; letter-spacing: 2px;
+            text-shadow: 0 0 5px #00ffff, 0 0 15px #00ffff, 0 0 30px #0000ff;
             animation: magicPulse 3s infinite alternate;
         }
-
         .brand-subtitle {
-            display: block;
-            font-size: 16px;
-            color: #e0e0e0;
-            letter-spacing: 4px;
-            margin-top: 5px;
-            font-weight: 700;
-            /* توهج خفيف بلون مختلف (وردي) */
-            text-shadow: 0 0 8px #ff00ff;
+            display: block; font-size: 16px; color: #e0e0e0; letter-spacing: 4px;
+            margin-top: 5px; font-weight: 700; text-shadow: 0 0 8px #ff00ff;
         }
-
-        /* حركة النبض السحري */
         @keyframes magicPulse {
-            0% {
-                opacity: 0.9;
-                text-shadow: 0 0 5px #00ffff, 0 0 15px #00ffff, 0 0 30px #0000ff;
-                transform: scale(1);
-            }
-            100% {
-                opacity: 1;
-                text-shadow: 0 0 10px #00ffff, 0 0 25px #00ffff, 0 0 50px #0000ff, 0 0 70px #ff00ff;
-                transform: scale(1.02); /* تكبير بسيط جداً */
-            }
+            0% { opacity: 0.9; transform: scale(1); text-shadow: 0 0 10px #00ffff; }
+            100% { opacity: 1; transform: scale(1.02); text-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff; }
         }
 
         /* واجهة التحميل */
         #loader {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #00ffff; font-size: 20px; z-index: 10; text-align: center;
-            background: rgba(0, 0, 0, 0.8); padding: 20px; border-radius: 15px;
+            color: #00ffff; font-size: 18px; z-index: 10; text-align: center;
+            background: rgba(0,0,0,0.8); padding: 20px; border-radius: 15px;
             border: 1px solid #00ffff; box-shadow: 0 0 20px rgba(0,255,255,0.2);
         }
-        
-        /* شاشة الكاميرا المصغرة */
+
+        /* الكاميرا */
         #cam-wrapper {
-            position: absolute; bottom: 20px; left: 20px; 
-            width: 180px; height: 135px; z-index: 5;
-            border-radius: 15px; overflow: hidden;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            background: #000;
-            box-shadow: 0 0 15px rgba(0,255,255,0.2);
+            position: absolute; bottom: 20px; left: 20px; width: 180px; height: 135px; z-index: 5;
+            border-radius: 15px; overflow: hidden; border: 2px solid rgba(255,255,255,0.2);
+            background: #000; box-shadow: 0 0 15px rgba(0,255,255,0.2);
         }
-        #cam-preview {
-            width: 100%; height: 100%;
-            transform: scaleX(-1); /* عكس المرآة */
-        }
+        #cam-preview { width: 100%; height: 100%; transform: scaleX(-1); }
         
-        /* مؤشر الحالة */
+        /* التنبيهات */
         #status-pill {
             position: absolute; bottom: 170px; left: 20px;
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px);
+            background: rgba(255,255,255,0.1); backdrop-filter: blur(5px);
             padding: 8px 15px; border-radius: 20px; color: white;
             font-size: 12px; z-index: 5; border: 1px solid rgba(255,255,255,0.1);
         }
@@ -99,27 +60,21 @@
 </head>
 <body>
 
-    <!-- إضافة الاسم السحري هنا -->
     <div id="magic-brand">
         <span class="brand-title">Hand Magic</span>
         <span class="brand-subtitle">: by Ahmed Allam</span>
     </div>
 
     <div id="loader">
-        <h2>جاري تحميل محرك السحر...</h2>
-        <p>يرجى السماح للكاميرا للتحكم في الكون</p>
+        <h2>جاري بناء النظام الشمسي...</h2>
+        <p>اسمح للكاميرا لتبدأ الرحلة</p>
     </div>
 
-    <div id="cam-wrapper">
-        <canvas id="cam-preview"></canvas>
-    </div>
-    
+    <div id="cam-wrapper"><canvas id="cam-preview"></canvas></div>
     <div id="status-pill">بانتظار اليد...</div>
-    
     <video id="video-input"></video>
     <div id="canvas-container"></div>
 
-    <!-- مكتبات Three.js و GUI -->
     <script type="importmap">
         {
             "imports": {
@@ -129,8 +84,6 @@
             }
         }
     </script>
-
-    <!-- مكتبات MediaPipe -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -141,46 +94,35 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import GUI from 'lil-gui';
 
-        // --- الإعدادات الرئيسية ---
+        // --- الإعدادات ---
         const config = {
-            count: 40000,           // عدد الجزيئات (كثافة عالية)
-            size: 0.08,             // حجم الجزيء
-            shape: 'Spiral Galaxy', // الشكل الافتراضي
-            speed: 0.2,             // سرعة الحركة الذاتية
-            interactionStrength: 2.0 // قوة تأثير اليد
+            count: 50000,
+            size: 0.07,
+            shape: 'Earth',
+            userColor: '#ffffff', // لون المستخدم للدمج
+            blendStrength: 0.1,   // قوة دمج لون المستخدم مع لون الكوكب
+            speed: 0.2,
+            interactionStrength: 2.0
         };
 
-        // متغيرات النظام
         let scene, camera, renderer, particles, geometry, material;
-        let controls;
-        let clock = new THREE.Clock();
+        let controls, clock = new THREE.Clock();
         
-        // متغيرات التحكم باليد
-        let handState = {
-            x: 0, y: 0,             // موقع اليد (للتدوير والتحريك)
-            expansion: 1.0,         // مدى فتح اليد (للتكبير)
-            detected: false
-        };
-        // تنعيم الحركة (Smoothing)
-        let targetRotationX = 0;
-        let targetRotationY = 0;
-        let currentRotationX = 0;
-        let currentRotationY = 0;
+        let handState = { x: 0, y: 0, expansion: 1.0, detected: false };
+        let currentRotX = 0, currentRotY = 0, targetRotX = 0, targetRotY = 0;
 
         initThree();
         initGUI();
         initMediaPipe();
         animate();
 
-        // 1. إعداد بيئة 3D
         function initThree() {
             const container = document.getElementById('canvas-container');
-            
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.015); // ضباب كوني أسود
+            scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
-            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 12;
+            camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 1000);
+            camera.position.z = 15;
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -190,303 +132,255 @@
 
             controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
-            controls.enableZoom = false; // سنستخدم اليد للتقريب
+            controls.enableZoom = false;
             controls.autoRotate = true;
             controls.autoRotateSpeed = 0.5;
 
-            // خامة الجزيئات السحرية
-            const sparkTexture = createMagicTexture();
-
             material = new THREE.PointsMaterial({
                 size: config.size,
-                map: sparkTexture,
-                transparent: true,
-                opacity: 0.8,
-                blending: THREE.AdditiveBlending, // دمج الأضواء
-                depthWrite: false,
-                vertexColors: true // تفعيل الألوان المتداخلة
+                map: createMagicTexture(),
+                transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending,
+                depthWrite: false, vertexColors: true
             });
 
             generateShape(config.shape);
-            
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.aspect = window.innerWidth/window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
         }
 
-        // 2. محرك توليد الأشكال السحرية
+        // --- مولد الكواكب ---
         function generateShape(type) {
             if (particles) scene.remove(particles);
 
             const positions = [];
             const colors = [];
-            const color1 = new THREE.Color();
-            const color2 = new THREE.Color();
+            const pColor = new THREE.Color(); // لون الجزيء الطبيعي
+            const uColor = new THREE.Color(config.userColor); // لون المستخدم
+            
             const count = config.count;
 
             for (let i = 0; i < count; i++) {
                 let x, y, z;
-                let r, g, b; // الألوان
+                
+                // إنشاء كرة أساسية
+                const rBase = 5;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                x = rBase * Math.sin(phi) * Math.cos(theta);
+                y = rBase * Math.sin(phi) * Math.sin(theta);
+                z = rBase * Math.cos(phi);
 
-                if (type === 'Spiral Galaxy') {
-                    // مجرة حلزونية بأذرع متعددة
-                    const branches = 5;
-                    const spinRadius = Math.random() * 8;
-                    const branchAngle = (i % branches) * ((Math.PI * 2) / branches);
-                    const curve = spinRadius * 0.8; // انحناء
-                    
-                    const randomX = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1);
-                    const randomY = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.5;
-                    const randomZ = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1);
-
-                    x = Math.cos(branchAngle + curve) * spinRadius + randomX;
-                    y = randomY;
-                    z = Math.sin(branchAngle + curve) * spinRadius + randomZ;
-
-                    // تلوين: المركز ذهبي، الأطراف أزرق وبنفسجي
-                    const mix = spinRadius / 8;
-                    color1.setHSL(0.6, 1.0, 0.5); // أزرق
-                    color2.setHSL(0.9, 1.0, 0.6); // وردي/بنفسجي
-                    color1.lerp(color2, Math.random()); // خلط عشوائي
-                    if(spinRadius < 1.5) color1.setHSL(0.1, 1.0, 0.8); // مركز ذهبي
+                // --- تخصيص الكواكب ---
+                
+                if (type === 'Sun') { // الشمس
+                    x *= 1.2; y *= 1.2; z *= 1.2;
+                    // تأثيرات التوهج الشمسي
+                    x += (Math.random()-0.5)*0.5;
+                    pColor.setHSL(0.05 + Math.random()*0.1, 1.0, 0.5 + Math.random()*0.4);
                 } 
-                else if (type === 'Saturn Rings') {
-                    // كوكب بحلقات
-                    const r = Math.random();
-                    if (r > 0.3) { // الحلقات
+                else if (type === 'Mercury') { // عطارد
+                    // رمادي وصخري
+                    pColor.setHSL(0.08, 0.1, 0.4 + Math.random()*0.2);
+                }
+                else if (type === 'Venus') { // الزهرة
+                    // غلاف جوي كثيف مصفر
+                    pColor.setHSL(0.1, 0.8, 0.6 + Math.random()*0.1);
+                }
+                else if (type === 'Earth') { // الأرض
+                    // محاكاة القارات والمحيطات باستخدام دالة ضجيج بسيطة
+                    const noise = Math.sin(x*0.5) * Math.cos(y*0.5) * Math.sin(z*0.5);
+                    if (Math.abs(y) > 4.2) pColor.setHSL(0.6, 0.1, 0.95); // أقطاب جليدية
+                    else if (noise > 0.15) pColor.setHSL(0.3, 0.6, 0.25); // يابسة خضراء
+                    else pColor.setHSL(0.6, 0.8, 0.4); // محيط أزرق
+                    
+                    // غيوم
+                    if(Math.random() > 0.85) {
+                        x *= 1.02; y *= 1.02; z *= 1.02;
+                        pColor.setHSL(0.0, 0.0, 1.0);
+                    }
+                }
+                else if (type === 'Mars') { // المريخ
+                    // أحمر صدئ
+                    pColor.setHSL(0.02, 0.9, 0.4 + Math.random()*0.2);
+                }
+                else if (type === 'Jupiter') { // المشتري
+                    x *= 1.3; y *= 1.3; z *= 1.3; // أكبر حجماً
+                    // خطوط عرضية مميزة
+                    const bands = Math.sin(y * 3.0 + Math.random()*0.2);
+                    if (bands > 0.5) pColor.setHSL(0.08, 0.6, 0.5); // بني فاتح
+                    else if (bands < -0.5) pColor.setHSL(0.04, 0.7, 0.35); // بني غامق
+                    else pColor.setHSL(0.1, 0.4, 0.7); // كريمي
+                }
+                else if (type === 'Saturn') { // زحل
+                    if (Math.random() > 0.45) { // الحلقات
                         const ang = Math.random() * Math.PI * 2;
-                        const dist = 4 + Math.random() * 4;
+                        const dist = 7 + Math.random() * 5;
                         x = Math.cos(ang) * dist;
                         z = Math.sin(ang) * dist;
                         y = (Math.random() - 0.5) * 0.2;
-                        // ألوان الحلقات (قوس قزح باهت)
-                        color1.setHSL(dist/10, 0.8, 0.6); 
-                    } else { // الكوكب نفسه
-                        const rad = 2.5;
-                        const phi = Math.acos(-1 + (2 * Math.random()));
-                        const theta = Math.sqrt(count * Math.PI) * phi;
-                        x = rad * Math.cos(theta) * Math.sin(phi);
-                        y = rad * Math.sin(theta) * Math.sin(phi);
-                        z = rad * Math.cos(phi);
-                        // ألوان الكوكب
-                        color1.setHSL(0.05 + Math.random()*0.1, 1.0, 0.5); // برتقالي ناري
+                        // فراغ كاسيني
+                        if (dist > 9 && dist < 9.5) y = 1000; 
+                        pColor.setHSL(0.1 + (dist/30), 0.6, 0.5);
+                    } else { // الكوكب
+                        pColor.setHSL(0.12, 0.5, 0.6);
                     }
                 }
-                else if (type === 'Hyper Tunnel') {
-                    // نفق زمني
-                    const angle = Math.random() * Math.PI * 2;
-                    const radius = 2 + Math.random() * 3;
-                    const length = (Math.random() - 0.5) * 30; // طويل جداً
-                    
-                    x = Math.cos(angle) * radius;
-                    y = Math.sin(angle) * radius;
-                    z = length;
-                    
-                    // لولبة النفق
-                    x += Math.sin(z * 0.2) * 2;
-                    y += Math.cos(z * 0.2) * 2;
-
-                    // ألوان النيون (أخضر وأزرق)
-                    color1.setHSL(0.3 + (z/30)*0.2, 1.0, 0.5); 
+                else if (type === 'Uranus') { // أورانوس
+                    // سماوي باهت
+                    pColor.setHSL(0.5, 0.6, 0.7);
+                    // حلقة عمودية رقيقة نادرة
+                    if (Math.random() > 0.97) {
+                        const ang = Math.random() * Math.PI * 2;
+                        const d = 8 + Math.random();
+                        x = Math.cos(ang)*d; y = Math.sin(ang)*d; z = 0;
+                    }
                 }
-                else if (type === 'Quantum Core') {
-                    // كرة طاقة فوضوية
-                    const r = 5 * Math.random();
-                    const theta = Math.random() * Math.PI * 2;
-                    const phi = Math.acos(2 * Math.random() - 1);
-                    x = r * Math.sin(phi) * Math.cos(theta);
-                    y = r * Math.sin(phi) * Math.sin(theta);
-                    z = r * Math.cos(phi);
-                    
-                    // ألوان كهربائية
-                    color1.setHSL(0.5 + Math.random()*0.2, 1.0, 0.7); // Cyan & Blue
+                else if (type === 'Neptune') { // نبتون
+                    // أزرق عميق
+                    pColor.setHSL(0.65, 0.9, 0.4);
+                }
+                else if (type === 'Galaxy') { // مجرة
+                     const arms = 5;
+                     const spin = i % arms;
+                     const rad = Math.random() * 10;
+                     const ang = spin * (Math.PI*2/arms) + rad * 0.5;
+                     x = Math.cos(ang) * rad + (Math.random()-0.5);
+                     z = Math.sin(ang) * rad + (Math.random()-0.5);
+                     y = (Math.random()-0.5) * (8 / (rad+1));
+                     pColor.setHSL(0.6 + rad/20, 0.8, 0.6);
                 }
 
-                colors.push(color1.r, color1.g, color1.b);
+                // --- دمج الألوان (السحر) ---
+                // نقوم بخلط اللون الطبيعي للكوكب مع اللون الذي يختاره المستخدم
+                // بنسبة blendStrength
+                pColor.lerp(uColor, config.blendStrength);
+
                 positions.push(x, y, z);
+                colors.push(pColor.r, pColor.g, pColor.b);
             }
 
             geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
             geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            
-            // حفظ المواقع الأصلية للحركة
             geometry.userData.originalPositions = Float32Array.from(positions);
 
             particles = new THREE.Points(geometry, material);
             scene.add(particles);
         }
 
-        // 3. نسيج الجزيء (Texture)
         function createMagicTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 32; canvas.height = 32;
-            const ctx = canvas.getContext('2d');
-            
-            // رسم وهج ناعم
-            const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-            gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.3)');
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 32, 32);
-            return new THREE.CanvasTexture(canvas);
+            const c = document.createElement('canvas'); c.width=32; c.height=32;
+            const ctx = c.getContext('2d');
+            const g = ctx.createRadialGradient(16,16,0,16,16,16);
+            g.addColorStop(0,'rgba(255,255,255,1)');
+            g.addColorStop(0.5,'rgba(255,255,255,0.2)');
+            g.addColorStop(1,'rgba(0,0,0,0)');
+            ctx.fillStyle=g; ctx.fillRect(0,0,32,32);
+            return new THREE.CanvasTexture(c);
         }
 
-        // 4. معالجة الفيديو والذكاء الاصطناعي
         function initMediaPipe() {
             const video = document.getElementById('video-input');
-            const previewCanvas = document.getElementById('cam-preview');
-            const ctx = previewCanvas.getContext('2d');
-            const statusPill = document.getElementById('status-pill');
+            const canvas = document.getElementById('cam-preview');
+            const ctx = canvas.getContext('2d');
+            const status = document.getElementById('status-pill');
 
             const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-            
-            hands.setOptions({
-                maxNumHands: 1,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.6,
-                minTrackingConfidence: 0.6
-            });
+            hands.setOptions({maxNumHands: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});
 
-            hands.onResults(results => {
+            hands.onResults(res => {
                 document.getElementById('loader').style.display = 'none';
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                ctx.drawImage(res.image, 0, 0, canvas.width, canvas.height);
                 
-                // رسم المعاينة
-                ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-                ctx.drawImage(results.image, 0, 0, previewCanvas.width, previewCanvas.height);
-
-                if (results.multiHandLandmarks.length > 0) {
+                if (res.multiHandLandmarks.length > 0) {
                     handState.detected = true;
-                    const lm = results.multiHandLandmarks[0];
+                    const lm = res.multiHandLandmarks[0];
                     drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#00ffff', lineWidth: 2});
-
-                    // 1. حساب مركز اليد (للتحريك والتدوير)
-                    // النقطة 9 هي مفصل الاصبع الوسطى (مركز الكف تقريباً)
-                    const palmX = lm[9].x; 
-                    const palmY = lm[9].y;
                     
-                    // تحديث الحالة (مع قلب المحور الأفقي لأن الكاميرا مرآة)
-                    handState.x = (1 - palmX) * 2 - 1; // تحويل من [0,1] إلى [-1,1]
-                    handState.y = -(palmY * 2 - 1);    // تحويل من [0,1] إلى [-1,1]
+                    // التحكم
+                    const pX = lm[9].x; const pY = lm[9].y;
+                    handState.x = (1 - pX) * 2 - 1; 
+                    handState.y = -(pY * 2 - 1);
 
-                    // 2. حساب الانفتاح (للتكبير/التصغير)
-                    // المسافة بين المعصم (0) ورأس الوسطى (12) مقارنة بحجم الكف (0-5)
-                    const handSize = Math.hypot(lm[5].x - lm[0].x, lm[5].y - lm[0].y);
-                    const fingerExtension = Math.hypot(lm[12].x - lm[0].x, lm[12].y - lm[0].y);
-                    
-                    let ratio = fingerExtension / handSize;
-                    // معايرة النسبة: 1.0 (مغلق) -> 2.2 (مفتوح)
-                    handState.expansion = Math.max(0.1, Math.min(2.5, (ratio - 0.8) * 1.5));
+                    const d = Math.hypot(lm[8].x - lm[4].x, lm[8].y - lm[4].y);
+                    const palm = Math.hypot(lm[5].x - lm[0].x, lm[5].y - lm[0].y);
+                    let ratio = d / palm; 
+                    handState.expansion = Math.max(0.1, Math.min(2.5, (ratio - 0.2) * 2.5));
 
-                    // تحديث النص
-                    let action = "";
-                    if (handState.expansion < 0.5) action = "انكماش (قبضة)";
-                    else if (handState.expansion > 1.8) action = "تمدد (يد مفتوحة)";
-                    else action = "تحكم بالدوران";
-                    
-                    statusPill.innerHTML = `موقع X: ${handState.x.toFixed(2)} | ${action}`;
-                    statusPill.style.borderColor = "#00ff00";
-
+                    status.innerText = "Hand Active | Control: " + (ratio > 1 ? "Expand" : "Contract");
+                    status.style.borderColor = "#00ff00";
                 } else {
                     handState.detected = false;
-                    statusPill.innerHTML = "ابحث عن يدك...";
-                    statusPill.style.borderColor = "rgba(255,255,255,0.1)";
-                    
-                    // عودة تدريجية للوضع الطبيعي
-                    handState.x *= 0.95;
-                    handState.y *= 0.95;
+                    status.innerText = "Looking for hand...";
+                    status.style.borderColor = "#ffffff";
+                    // Reset slowly
+                    handState.x *= 0.95; handState.y *= 0.95;
                     handState.expansion = THREE.MathUtils.lerp(handState.expansion, 1.0, 0.05);
                 }
             });
 
-            const cameraUtils = new Camera(video, {
-                onFrame: async () => await hands.send({image: video}),
-                width: 320, height: 240
-            });
-            cameraUtils.start();
+            const cam = new Camera(video, {onFrame: async()=>await hands.send({image:video}), width:320, height:240});
+            cam.start();
         }
 
-        // 5. حلقة التحريك (Animation Loop)
         function animate() {
             requestAnimationFrame(animate);
-            
             const time = Date.now() * 0.0005;
 
-            // منطق التفاعل الفيزيائي
             if (handState.detected) {
-                // تدوير المجسم بناءً على حركة اليد يميناً ويساراً وفوق وتحت
-                // نقوم بضرب القيمة لزيادة حساسية الدوران
-                targetRotationY = handState.x * 1.5; 
-                targetRotationX = handState.y * 1.5;
-                
-                // إيقاف الدوران التلقائي عند التحكم اليدوي
                 controls.autoRotate = false;
+                targetRotY = handState.x * 1.5;
+                targetRotX = handState.y * 1.5;
             } else {
-                controls.autoRotate = config.speed > 0;
-                targetRotationX = 0;
-                targetRotationY = 0;
+                controls.autoRotate = true;
+                targetRotX = 0; targetRotY = 0;
             }
 
-            // تنعيم حركة الدوران (Smooth Interpolation)
-            currentRotationX = THREE.MathUtils.lerp(currentRotationX, targetRotationX, 0.1);
-            currentRotationY = THREE.MathUtils.lerp(currentRotationY, targetRotationY, 0.1);
+            // Smooth interpolation
+            currentRotX = THREE.MathUtils.lerp(currentRotX, targetRotX, 0.1);
+            currentRotY = THREE.MathUtils.lerp(currentRotY, targetRotY, 0.1);
 
             if (particles) {
-                // تطبيق الدوران
-                particles.rotation.y += 0.002 + (currentRotationY * 0.05);
-                particles.rotation.x = currentRotationX * 0.5; // إمالة خفيفة
+                particles.rotation.y += 0.002 + (currentRotY * 0.05);
+                particles.rotation.x = currentRotX * 0.5;
 
-                // تطبيق التكبير والتصغير
-                let scale = THREE.MathUtils.lerp(particles.scale.x, handState.expansion, 0.1);
-                particles.scale.setScalar(scale);
+                // Scale
+                let sc = THREE.MathUtils.lerp(particles.scale.x, handState.expansion, 0.1);
+                particles.scale.setScalar(sc);
 
-                // حركة الجزيئات الداخلية (Warp Effect)
-                const positions = particles.geometry.attributes.position.array;
-                const originals = particles.geometry.userData.originalPositions;
-                
-                for(let i=0; i < config.count; i++) {
-                    const idx = i * 3;
-                    // معادلة موجية معقدة لتعطي شعور الحياة
-                    // إذا كانت اليد مفتوحة جداً، الجزيئات تهتز بقوة
-                    const excitement = (handState.expansion - 1.0) * 0.5;
-                    
-                    positions[idx] = originals[idx] + Math.cos(time + originals[idx+1]) * (0.05 + excitement);
-                    positions[idx+1] = originals[idx+1] + Math.sin(time + originals[idx]) * (0.05 + excitement);
-                    
-                    // إذا كان الشكل نفقاً، حرك الجزيئات نحوك
-                    if (config.shape === 'Hyper Tunnel') {
-                        positions[idx+2] += 0.1 + (handState.expansion * 0.2);
-                        if (positions[idx+2] > 15) positions[idx+2] = -15; // إعادة تدوير
-                    }
+                // Alive particles
+                const pos = particles.geometry.attributes.position.array;
+                const orig = particles.geometry.userData.originalPositions;
+                for(let i=0; i<config.count; i++){
+                    const idx = i*3;
+                    pos[idx+1] = orig[idx+1] + Math.sin(time + orig[idx]*0.5) * 0.1;
                 }
                 particles.geometry.attributes.position.needsUpdate = true;
             }
-
+            
             controls.update();
             renderer.render(scene, camera);
         }
 
-        // 6. واجهة التحكم GUI
         function initGUI() {
-            const gui = new GUI({ title: 'لوحة التحكم الفضائية' });
+            const gui = new GUI({ title: 'Planetary Controls' });
             
-            gui.add(config, 'shape', ['Spiral Galaxy', 'Saturn Rings', 'Hyper Tunnel', 'Quantum Core'])
-               .name('شكل المجرة')
-               .onChange(val => generateShape(val));
-               
-            gui.add(config, 'interactionStrength', 0.1, 5).name('قوة السحر');
-            gui.add(config, 'size', 0.01, 0.3).name('حجم النجوم').onChange(v => material.size = v);
+            const shapeList = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Galaxy'];
+            gui.add(config, 'shape', shapeList).name('Planet Select').onChange(val => generateShape(val));
             
-            // تخصيص التصميم
-            gui.domElement.style.right = '20px';
-            gui.domElement.style.top = '20px';
-            gui.domElement.style.fontFamily = 'Segoe UI';
-        }
+            const colorFolder = gui.addFolder('Magic Colors');
+            colorFolder.addColor(config, 'userColor').name('Magic Tint').onChange(() => generateShape(config.shape));
+            colorFolder.add(config, 'blendStrength', 0.0, 1.0).name('Tint Strength').onChange(() => generateShape(config.shape));
+            
+            gui.add(config, 'size', 0.01, 0.2).name('Particle Size').onChange(v => material.size = v);
 
+            gui.domElement.style.top = '20px';
+            gui.domElement.style.right = '20px';
+        }
     </script>
 </body>
 </html>
