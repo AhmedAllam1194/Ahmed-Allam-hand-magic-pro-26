@@ -1,80 +1,68 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magical Solar System - Ahmed Allam</title>
-    
-    <!-- خطوط جوجل للفخامة -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&display=swap" rel="stylesheet">
-
+    <title>Magical Universe - Ahmed Allam</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@900&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; }
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        
+        /* شاشة تشخيص الأخطاء (تظهر فقط عند المشاكل) */
+        #debug-console {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); color: #ff5555; z-index: 9999;
+            padding: 40px; box-sizing: border-box; display: none;
+            font-family: monospace; direction: ltr; overflow: auto; text-align: left;
+        }
+        #debug-console h1 { color: white; border-bottom: 1px solid #555; padding-bottom: 10px; }
+
+        /* التصميم الأساسي */
+        #magic-title {
+            position: absolute; top: 20px; left: 20px; z-index: 10;
+            font-family: 'Cinzel Decorative', cursive; pointer-events: none;
+        }
+        .main-title {
+            font-size: 30px; display: block;
+            background: linear-gradient(90deg, #fff, #0ff, #f0f);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px #0ff);
+        }
+        .sub-title { font-size: 14px; color: #ccc; letter-spacing: 2px; display: block; }
+        
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            color: #0ff; text-align: center; font-size: 18px; z-index: 5;
+        }
+        
+        #cam-preview {
+            position: absolute; bottom: 20px; left: 20px; width: 150px; height: 110px;
+            border: 2px solid #333; border-radius: 10px; transform: scaleX(-1);
+            background: #000; z-index: 5;
+        }
         #video-input { display: none; }
-        
-        /* --- تصميم الاسم السحري --- */
-        #magic-brand {
-            position: absolute; top: 30px; left: 30px; z-index: 20; pointer-events: none;
-            font-family: 'Cinzel Decorative', cursive; text-align: left; direction: ltr;
-        }
-        .brand-title {
-            display: block; font-size: 38px; font-weight: 900; color: #ffffff;
-            text-transform: uppercase; letter-spacing: 2px;
-            text-shadow: 0 0 5px #00ffff, 0 0 15px #00ffff, 0 0 30px #0000ff;
-            animation: magicPulse 3s infinite alternate;
-        }
-        .brand-subtitle {
-            display: block; font-size: 16px; color: #e0e0e0; letter-spacing: 4px;
-            margin-top: 5px; font-weight: 700; text-shadow: 0 0 8px #ff00ff;
-        }
-        @keyframes magicPulse {
-            0% { opacity: 0.9; transform: scale(1); text-shadow: 0 0 10px #00ffff; }
-            100% { opacity: 1; transform: scale(1.02); text-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff; }
-        }
-
-        /* واجهة التحميل */
-        #loader {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            color: #00ffff; font-size: 18px; z-index: 10; text-align: center;
-            background: rgba(0,0,0,0.8); padding: 20px; border-radius: 15px;
-            border: 1px solid #00ffff; box-shadow: 0 0 20px rgba(0,255,255,0.2);
-        }
-
-        /* الكاميرا */
-        #cam-wrapper {
-            position: absolute; bottom: 20px; left: 20px; width: 180px; height: 135px; z-index: 5;
-            border-radius: 15px; overflow: hidden; border: 2px solid rgba(255,255,255,0.2);
-            background: #000; box-shadow: 0 0 15px rgba(0,255,255,0.2);
-        }
-        #cam-preview { width: 100%; height: 100%; transform: scaleX(-1); }
-        
-        /* التنبيهات */
-        #status-pill {
-            position: absolute; bottom: 170px; left: 20px;
-            background: rgba(255,255,255,0.1); backdrop-filter: blur(5px);
-            padding: 8px 15px; border-radius: 20px; color: white;
-            font-size: 12px; z-index: 5; border: 1px solid rgba(255,255,255,0.1);
-        }
     </style>
 </head>
 <body>
 
-    <div id="magic-brand">
-        <span class="brand-title">Hand Magic</span>
-        <span class="brand-subtitle">: by Ahmed Allam</span>
+    <!-- شاشة عرض الأخطاء -->
+    <div id="debug-console">
+        <h1>System Diagnostics / تشخيص النظام</h1>
+        <p id="debug-text"></p>
+        <button onclick="location.reload()" style="padding:10px; background:#333; color:white; border:none; cursor:pointer; margin-top:20px;">Reload Page</button>
     </div>
 
-    <div id="loader">
-        <h2>جاري بناء النظام الشمسي...</h2>
-        <p>اسمح للكاميرا لتبدأ الرحلة</p>
+    <div id="magic-title">
+        <span class="main-title">Hand Magic</span>
+        <span class="sub-title">By : Ahmed Allam</span>
     </div>
 
-    <div id="cam-wrapper"><canvas id="cam-preview"></canvas></div>
-    <div id="status-pill">بانتظار اليد...</div>
-    <video id="video-input"></video>
+    <div id="loading">جاري تحميل النظام...<br>يرجى الانتظار</div>
+    <canvas id="cam-preview"></canvas>
+    <video id="video-input" playsinline></video>
     <div id="canvas-container"></div>
 
+    <!-- استيراد المكتبات -->
     <script type="importmap">
         {
             "imports": {
@@ -84,6 +72,8 @@
             }
         }
     </script>
+
+    <!-- MediaPipe Global -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -94,35 +84,49 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import GUI from 'lil-gui';
 
-        // --- الإعدادات ---
-        const config = {
-            count: 50000,
-            size: 0.07,
-            shape: 'Earth',
-            userColor: '#ffffff', // لون المستخدم للدمج
-            blendStrength: 0.1,   // قوة دمج لون المستخدم مع لون الكوكب
-            speed: 0.2,
-            interactionStrength: 2.0
+        // --- نظام التقاط الأخطاء ---
+        function logError(msg) {
+            const consoleDiv = document.getElementById('debug-console');
+            const textDiv = document.getElementById('debug-text');
+            consoleDiv.style.display = 'block';
+            textDiv.innerHTML += `<span style="color:red;">[ERROR]</span> ${msg}<br><br>`;
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        window.onerror = function(msg, source, lineno, colno, error) {
+            logError(`Script Error: ${msg}`);
+            return false;
         };
 
-        let scene, camera, renderer, particles, geometry, material;
-        let controls, clock = new THREE.Clock();
-        
-        let handState = { x: 0, y: 0, expansion: 1.0, detected: false };
-        let currentRotX = 0, currentRotY = 0, targetRotX = 0, targetRotY = 0;
+        // التحقق من تشغيل الملف مباشرة
+        if (window.location.protocol === 'file:') {
+            logError("FATAL ERROR: You are running this file via 'file://'.<br>خطأ قاتل: لا يمكن تشغيل الكاميرا من الملف مباشرة.<br>Solution: Use VS Code Live Server or CodePen.io.");
+            throw new Error("File Protocol Block");
+        }
 
-        initThree();
-        initGUI();
-        initMediaPipe();
-        animate();
+        const config = { count: 35000, size: 0.08, shape: 'Earth' };
+        let scene, camera, renderer, particles, material, controls;
+        let handState = { x: 0, y: 0, expansion: 1.0, detected: false };
+        let smooth = { x: 0, y: 0 };
+
+        try {
+            initThree();
+            initGUI();
+            initMediaPipe();
+            animate();
+        } catch (e) {
+            logError(e.message);
+        }
 
         function initThree() {
             const container = document.getElementById('canvas-container');
+            if(!container) throw new Error("Canvas container not found");
+
             scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
-            camera = new THREE.PerspectiveCamera(65, window.innerWidth/window.innerHeight, 0.1, 1000);
-            camera.position.z = 15;
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 16;
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -131,152 +135,77 @@
             container.appendChild(renderer.domElement);
 
             controls = new OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.enableZoom = false;
-            controls.autoRotate = true;
-            controls.autoRotateSpeed = 0.5;
+            controls.enableDamping = true; controls.enableZoom = false; controls.autoRotate = true;
 
             material = new THREE.PointsMaterial({
                 size: config.size,
-                map: createMagicTexture(),
+                map: createTexture(),
                 transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending,
                 depthWrite: false, vertexColors: true
             });
 
             generateShape(config.shape);
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
         }
 
-        // --- مولد الكواكب ---
         function generateShape(type) {
             if (particles) scene.remove(particles);
+            const positions = [], colors = [];
+            const color = new THREE.Color();
 
-            const positions = [];
-            const colors = [];
-            const pColor = new THREE.Color(); // لون الجزيء الطبيعي
-            const uColor = new THREE.Color(config.userColor); // لون المستخدم
-            
-            const count = config.count;
-
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < config.count; i++) {
                 let x, y, z;
-                
-                // إنشاء كرة أساسية
-                const rBase = 5;
+                // Basic Sphere logic
+                const r = 5;
                 const theta = Math.random() * Math.PI * 2;
                 const phi = Math.acos(2 * Math.random() - 1);
-                x = rBase * Math.sin(phi) * Math.cos(theta);
-                y = rBase * Math.sin(phi) * Math.sin(theta);
-                z = rBase * Math.cos(phi);
+                x = r * Math.sin(phi) * Math.cos(theta);
+                y = r * Math.sin(phi) * Math.sin(theta);
+                z = r * Math.cos(phi);
 
-                // --- تخصيص الكواكب ---
-                
-                if (type === 'Sun') { // الشمس
-                    x *= 1.2; y *= 1.2; z *= 1.2;
-                    // تأثيرات التوهج الشمسي
-                    x += (Math.random()-0.5)*0.5;
-                    pColor.setHSL(0.05 + Math.random()*0.1, 1.0, 0.5 + Math.random()*0.4);
-                } 
-                else if (type === 'Mercury') { // عطارد
-                    // رمادي وصخري
-                    pColor.setHSL(0.08, 0.1, 0.4 + Math.random()*0.2);
-                }
-                else if (type === 'Venus') { // الزهرة
-                    // غلاف جوي كثيف مصفر
-                    pColor.setHSL(0.1, 0.8, 0.6 + Math.random()*0.1);
-                }
-                else if (type === 'Earth') { // الأرض
-                    // محاكاة القارات والمحيطات باستخدام دالة ضجيج بسيطة
-                    const noise = Math.sin(x*0.5) * Math.cos(y*0.5) * Math.sin(z*0.5);
-                    if (Math.abs(y) > 4.2) pColor.setHSL(0.6, 0.1, 0.95); // أقطاب جليدية
-                    else if (noise > 0.15) pColor.setHSL(0.3, 0.6, 0.25); // يابسة خضراء
-                    else pColor.setHSL(0.6, 0.8, 0.4); // محيط أزرق
-                    
-                    // غيوم
-                    if(Math.random() > 0.85) {
-                        x *= 1.02; y *= 1.02; z *= 1.02;
-                        pColor.setHSL(0.0, 0.0, 1.0);
-                    }
-                }
-                else if (type === 'Mars') { // المريخ
-                    // أحمر صدئ
-                    pColor.setHSL(0.02, 0.9, 0.4 + Math.random()*0.2);
-                }
-                else if (type === 'Jupiter') { // المشتري
-                    x *= 1.3; y *= 1.3; z *= 1.3; // أكبر حجماً
-                    // خطوط عرضية مميزة
-                    const bands = Math.sin(y * 3.0 + Math.random()*0.2);
-                    if (bands > 0.5) pColor.setHSL(0.08, 0.6, 0.5); // بني فاتح
-                    else if (bands < -0.5) pColor.setHSL(0.04, 0.7, 0.35); // بني غامق
-                    else pColor.setHSL(0.1, 0.4, 0.7); // كريمي
-                }
-                else if (type === 'Saturn') { // زحل
-                    if (Math.random() > 0.45) { // الحلقات
-                        const ang = Math.random() * Math.PI * 2;
-                        const dist = 7 + Math.random() * 5;
-                        x = Math.cos(ang) * dist;
-                        z = Math.sin(ang) * dist;
-                        y = (Math.random() - 0.5) * 0.2;
-                        // فراغ كاسيني
-                        if (dist > 9 && dist < 9.5) y = 1000; 
-                        pColor.setHSL(0.1 + (dist/30), 0.6, 0.5);
-                    } else { // الكوكب
-                        pColor.setHSL(0.12, 0.5, 0.6);
-                    }
-                }
-                else if (type === 'Uranus') { // أورانوس
-                    // سماوي باهت
-                    pColor.setHSL(0.5, 0.6, 0.7);
-                    // حلقة عمودية رقيقة نادرة
-                    if (Math.random() > 0.97) {
-                        const ang = Math.random() * Math.PI * 2;
-                        const d = 8 + Math.random();
-                        x = Math.cos(ang)*d; y = Math.sin(ang)*d; z = 0;
-                    }
-                }
-                else if (type === 'Neptune') { // نبتون
-                    // أزرق عميق
-                    pColor.setHSL(0.65, 0.9, 0.4);
-                }
-                else if (type === 'Galaxy') { // مجرة
-                     const arms = 5;
+                if (type === 'Earth') {
+                    const noise = Math.sin(x*0.5) * Math.cos(y*0.5);
+                    if(Math.abs(y)>4.5) color.setHSL(0.6,0.1,0.9); // Polar
+                    else if(noise>0.2) color.setHSL(0.3,0.6,0.3); // Land
+                    else color.setHSL(0.6,0.8,0.4); // Ocean
+                } else if (type === 'Sun') {
+                    x*=1.2; y*=1.2; z*=1.2;
+                    color.setHSL(0.05 + Math.random()*0.1, 1.0, 0.6);
+                } else if (type === 'Galaxy') {
+                     const arms = 3;
                      const spin = i % arms;
                      const rad = Math.random() * 10;
                      const ang = spin * (Math.PI*2/arms) + rad * 0.5;
-                     x = Math.cos(ang) * rad + (Math.random()-0.5);
-                     z = Math.sin(ang) * rad + (Math.random()-0.5);
-                     y = (Math.random()-0.5) * (8 / (rad+1));
-                     pColor.setHSL(0.6 + rad/20, 0.8, 0.6);
+                     x = Math.cos(ang)*rad + (Math.random()-0.5);
+                     z = Math.sin(ang)*rad + (Math.random()-0.5);
+                     y = (Math.random()-0.5);
+                     color.setHSL(0.6 + rad/20, 0.8, 0.6);
+                } else {
+                    // Default Planets
+                    color.setHSL(Math.random(), 0.8, 0.5);
                 }
-
-                // --- دمج الألوان (السحر) ---
-                // نقوم بخلط اللون الطبيعي للكوكب مع اللون الذي يختاره المستخدم
-                // بنسبة blendStrength
-                pColor.lerp(uColor, config.blendStrength);
-
+                
                 positions.push(x, y, z);
-                colors.push(pColor.r, pColor.g, pColor.b);
+                colors.push(color.r, color.g, color.b);
             }
 
-            geometry = new THREE.BufferGeometry();
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            geometry.userData.originalPositions = Float32Array.from(positions);
-
-            particles = new THREE.Points(geometry, material);
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            geo.userData.original = Float32Array.from(positions);
+            particles = new THREE.Points(geo, material);
             scene.add(particles);
         }
 
-        function createMagicTexture() {
+        function createTexture() {
             const c = document.createElement('canvas'); c.width=32; c.height=32;
             const ctx = c.getContext('2d');
             const g = ctx.createRadialGradient(16,16,0,16,16,16);
             g.addColorStop(0,'rgba(255,255,255,1)');
-            g.addColorStop(0.5,'rgba(255,255,255,0.2)');
             g.addColorStop(1,'rgba(0,0,0,0)');
             ctx.fillStyle=g; ctx.fillRect(0,0,32,32);
             return new THREE.CanvasTexture(c);
@@ -286,100 +215,55 @@
             const video = document.getElementById('video-input');
             const canvas = document.getElementById('cam-preview');
             const ctx = canvas.getContext('2d');
-            const status = document.getElementById('status-pill');
 
             const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
             hands.setOptions({maxNumHands: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5});
 
             hands.onResults(res => {
-                document.getElementById('loader').style.display = 'none';
+                document.getElementById('loading').style.display = 'none';
                 ctx.clearRect(0,0,canvas.width,canvas.height);
                 ctx.drawImage(res.image, 0, 0, canvas.width, canvas.height);
-                
-                if (res.multiHandLandmarks.length > 0) {
+                if(res.multiHandLandmarks.length > 0) {
                     handState.detected = true;
                     const lm = res.multiHandLandmarks[0];
-                    drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#00ffff', lineWidth: 2});
-                    
-                    // التحكم
-                    const pX = lm[9].x; const pY = lm[9].y;
-                    handState.x = (1 - pX) * 2 - 1; 
-                    handState.y = -(pY * 2 - 1);
-
+                    drawConnectors(ctx, lm, HAND_CONNECTIONS, {color: '#0ff'});
+                    handState.x = (lm[9].x - 0.5) * 2;
+                    handState.y = (lm[9].y - 0.5) * 2;
                     const d = Math.hypot(lm[8].x - lm[4].x, lm[8].y - lm[4].y);
-                    const palm = Math.hypot(lm[5].x - lm[0].x, lm[5].y - lm[0].y);
-                    let ratio = d / palm; 
-                    handState.expansion = Math.max(0.1, Math.min(2.5, (ratio - 0.2) * 2.5));
-
-                    status.innerText = "Hand Active | Control: " + (ratio > 1 ? "Expand" : "Contract");
-                    status.style.borderColor = "#00ff00";
+                    handState.expansion = 0.5 + d * 5;
                 } else {
                     handState.detected = false;
-                    status.innerText = "Looking for hand...";
-                    status.style.borderColor = "#ffffff";
-                    // Reset slowly
-                    handState.x *= 0.95; handState.y *= 0.95;
-                    handState.expansion = THREE.MathUtils.lerp(handState.expansion, 1.0, 0.05);
                 }
             });
 
-            const cam = new Camera(video, {onFrame: async()=>await hands.send({image:video}), width:320, height:240});
-            cam.start();
+            const cam = new Camera(video, {
+                onFrame: async () => { await hands.send({image: video}); },
+                width: 320, height: 240
+            });
+            cam.start().catch(e => logError("Camera Access Denied: " + e.message));
+        }
+
+        function initGUI() {
+            const gui = new GUI({ title: 'Planets' });
+            gui.add(config, 'shape', ['Earth', 'Sun', 'Galaxy', 'Mars', 'Jupiter']).onChange(generateShape);
+            gui.domElement.style.top = '100px';
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            const time = Date.now() * 0.0005;
-
-            if (handState.detected) {
+            if(handState.detected) {
                 controls.autoRotate = false;
-                targetRotY = handState.x * 1.5;
-                targetRotX = handState.y * 1.5;
+                smooth.x = THREE.MathUtils.lerp(smooth.x, handState.y, 0.1);
+                smooth.y = THREE.MathUtils.lerp(smooth.y, -handState.x, 0.1);
+                particles.rotation.x = smooth.x;
+                particles.rotation.y += smooth.y * 0.1;
+                particles.scale.setScalar(THREE.MathUtils.lerp(particles.scale.x, handState.expansion, 0.1));
             } else {
                 controls.autoRotate = true;
-                targetRotX = 0; targetRotY = 0;
+                particles.scale.setScalar(1 + Math.sin(Date.now()*0.001)*0.05);
             }
-
-            // Smooth interpolation
-            currentRotX = THREE.MathUtils.lerp(currentRotX, targetRotX, 0.1);
-            currentRotY = THREE.MathUtils.lerp(currentRotY, targetRotY, 0.1);
-
-            if (particles) {
-                particles.rotation.y += 0.002 + (currentRotY * 0.05);
-                particles.rotation.x = currentRotX * 0.5;
-
-                // Scale
-                let sc = THREE.MathUtils.lerp(particles.scale.x, handState.expansion, 0.1);
-                particles.scale.setScalar(sc);
-
-                // Alive particles
-                const pos = particles.geometry.attributes.position.array;
-                const orig = particles.geometry.userData.originalPositions;
-                for(let i=0; i<config.count; i++){
-                    const idx = i*3;
-                    pos[idx+1] = orig[idx+1] + Math.sin(time + orig[idx]*0.5) * 0.1;
-                }
-                particles.geometry.attributes.position.needsUpdate = true;
-            }
-            
             controls.update();
             renderer.render(scene, camera);
-        }
-
-        function initGUI() {
-            const gui = new GUI({ title: 'Planetary Controls' });
-            
-            const shapeList = ['Sun', 'Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Galaxy'];
-            gui.add(config, 'shape', shapeList).name('Planet Select').onChange(val => generateShape(val));
-            
-            const colorFolder = gui.addFolder('Magic Colors');
-            colorFolder.addColor(config, 'userColor').name('Magic Tint').onChange(() => generateShape(config.shape));
-            colorFolder.add(config, 'blendStrength', 0.0, 1.0).name('Tint Strength').onChange(() => generateShape(config.shape));
-            
-            gui.add(config, 'size', 0.01, 0.2).name('Particle Size').onChange(v => material.size = v);
-
-            gui.domElement.style.top = '20px';
-            gui.domElement.style.right = '20px';
         }
     </script>
 </body>
